@@ -10,7 +10,8 @@ streamlit==1.29.0
 
 # Vector Databases
 #faiss-cpu==1.7.4
-faiss-cpu
+#faiss-cpu
+faiss-cpu==1.13.2
 chromadb==0.4.22
 
 # Search and Data Sources
@@ -33,4 +34,4 @@ plotly==5.18.0
 # MCP
 mcp==1.26.0
 
-pillow>=11.0.0  # for Python 3.14 compatibility
+#pillow>=11.0.0  # for Python 3.14 compatibility
