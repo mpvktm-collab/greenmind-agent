@@ -1,0 +1,281 @@
+TITLE: Renewable Energy
+SOURCE: https://www.bmwk.de/Redaktion/EN/Dossier/renewable-energy.html
+SCRAPED: 2026-03-10T21:14:04.175988
+======================================================================
+
+HEADINGS:
+H1: Renewable Energy
+H2: Introduction
+H2: Four key figures on renewable energy
+H2: Making the right choices
+H2: Publications on renewable energy
+H2: Our energy transition for an energy supply that is secure, clean, and affordable
+H2: Competition-based funding for renewable energy
+H2: Infografics
+H2: Opening up renewable energy auctions to European Member States
+H2: An electricity market for the energy transition
+H2: Using renewables for heating
+H2: Efficient buildings
+H2: Off to new markets!
+H2: Related topics
+H2: Consent management
+H3: Energy sources that drive forward the energy transition
+H3: Results of the auctions conducted pursuant to the Renewable Energy Sources Act
+H3: Infographics on the results of the auctions
+H3: Steering the expansion, limiting the costs and maintaining stakeholder diversity
+H3: Renewables in transport
+H3: Strictly necessary (cannot be deselected)
+H3: Consent to the use of JW Player for video streaming
+
+======================================================================
+
+CONTENT:
+
+[Paragraph 1]
++++ Thank you for your interest. We are currently updating this page. You will find updated information here shortly. +++
+
+[Paragraph 2]
+Renewable energy sources are some of the most important sources of electricity for Germany, and the expansion of renewables is one of the central pillars in Germany's energy transition. Our energy supply is to become more climate-friendly, and is also to make us less dependent on imports of fossil fuels.
+
+[Paragraph 3]
+Germany’s electricity supply is becoming “greener” every year. The share of renewables in electricity consumption has steadily grown over the last few years – rising from around 6% in 2000 to around 38% in 2018. This means that the 35% target for 2020 was reached earlier than expected.
+
+[Paragraph 4]
+By 2025, 40-45% of electricity consumed in Germany is to derive from renewables. This is the aim set out in the Renewable Energy Sources Act.
+
+[Paragraph 5]
+The following diagram provides an overview of Germany’s electricity mix:
+
+[Paragraph 6]
+Gross electricity generation in Germany in 2017 in TWh; preliminary figures incl. some estimates; **regenerative part; last updated: February 2018
+
+[Paragraph 7]
+© Working Group on Energy Balances
+
+[Paragraph 8]
+Renewables are also becoming more important with regard to heat supply. At present, they account for 13.9% of final energy consumption for heat and cooling. By 2020, this share is to reach 14%.
+
+[Paragraph 9]
+Wind and solar energy are the most important forms of renewables. Biomass and hydropower are also valuable building blocks in our energy system.
+
+[Paragraph 10]
+Solar energy: in photovoltaic installations, solar panels directly transform sunlight into electricity. New solar installations are among the most affordable renewables technologies. At the end of 2018, the number of PV installations stood at 1.6 million. These produced around 45 gigawatts of electricity, making PV the second largest source of renewable electricity after onshore wind energy, with an installed capacity of over 52 gigawatts.
+
+[Paragraph 11]
+In the heating sector, solar collectors use energy from the sun to generate heat for domestic hot water or industrial processes.
+
+[Paragraph 12]
+More information on the development of renewable energy can be found (in German) at www.erneuerbare-energien.de.
+
+[Paragraph 13]
+Since 3 July 2017, the new SMARD Information Platform (in German) has been providing information on the electricity market – almost in real time. This includes information on renewable energy sources. SMARD makes this data available in a form that is transparent, well-structured and easy-to-understand. This makes the platform a useful tool for different groups of users that are interested in following the energy transition and its progress. Experts can also make use of numerous tools for in-depth analysis.
+
+[Paragraph 14]
+The results of the auctions for expanding wind power and photovoltaics conducted pursuant to the 2014 and 2017 Renewable Energy Sources Act show that the reforms have been a step in the right direction and are paving the way for making the energy transition a success. The average rates of funding awarded have fallen for almost all generation types. In the case of photovoltaics, for example, the auctions are resulting in significant falls in average funding levels for ground-mounted installations.
+
+[Paragraph 15]
+Competitive auctions have a cost-reducing effect
+
+[Paragraph 16]
+Average funding awarded in the auctions for ground-mounted PV installations
+
+[Paragraph 17]
+High realisation rates averaging around 95% for ground-mounted PV installations from the first five auction rounds show that almost all the projects awarded funding are actually built.
+Infographic as PDF (PDF, 128 KB)
+
+[Paragraph 18]
+In addition to the auctions focusing on one specific source of renewable energy, the 2017 Renewable Energy Sources Act also provided for the implementation of a pilot project where joint auctions for PV and onshore wind power capacity will be held between 2018 and 2020, resulting in a competition between different technologies. More information about how the level of funding will be determined can be found (in German) at Erneuerbare-Energien.de
+
+[Paragraph 19]
+per cent share
+of renewables in gross electricity generation in Germany in 2016
+
+[Paragraph 20]
+per cent share
+of renewables in Germany’s gross electricity consumption in 2016
+
+[Paragraph 21]
+per cent share
+of wind power in electricity generation from renewable sources in 2016
+
+[Paragraph 22]
+ct/kWh average level of funding awarded
+in the first round of auctions for ground-mounted PV installations under the 2017 Renewable Energy Sources Act (as a comparison: in first pilot auction round, average funding awarded was 9.17 ct/kWh)
+
+[Paragraph 23]
+2014 RENEWABLE ENERGY SOURCES ACT
+
+[Paragraph 24]
+The Renewable Energy Sources Act (EEG), which entered into force in 2000, is a key driving force for the expansion of renewable energy in Germany. The 2014 revision of the Renewable Energy Sources Act was an important step towards setting the energy transition on a path to success.
+
+[Paragraph 25]
+The Renewable Energy Sources Act built a platform for the expansion of renewables, enabling them to become one of the mainstays of Germany’s power supply.
+The figure in 2000 was only around six per cent. The Act had the aim of enabling young technologies such as wind and solar energy to enter the market with support provided by fixed tariffs and a purchase guarantee.
+
+[Paragraph 26]
+The 2014 revision of the Renewable Energy Sources Act
+
+[Paragraph 27]
+The price of electricity is a major factor in the level of competitiveness of energy-intensive industries facing international competition. These companies are covered by the special equalisation scheme, which in certain circumstances provides for a reduced EEG surcharge. Also, the Renewable Energy Sources Act grants self-suppliers and self-generators certain privileges under certain conditions. Find out more about the special equalisation scheme and self-suppliers.
+
+[Paragraph 28]
+26/01/2026
+-
+PUBLICATION
+-
+Renewable Energy
+
+[Paragraph 29]
+Publication:
+Cross-border cooperation on offshore wind projects in the North Seas
+
+[Paragraph 30]
+Insights into the German perspective
+(Document is accessible)
+
+[Paragraph 31]
+29/11/2024
+-
+PUBLICATION
+-
+Renewable Energy
+
+[Paragraph 32]
+Publication:
+Renewable Energy Sources in Figures
+
+[Paragraph 33]
+National and International Development, 2023
+
+[Paragraph 34]
+06/10/2016
+-
+PUBLICATION
+-
+Energy Efficiency
+
+[Paragraph 35]
+Publication:
+Green Paper on Energy Efficiency
+
+[Paragraph 36]
+Discussion Paper of the Federal Ministry for Economic Affairs and Energy
+
+[Paragraph 37]
+01/04/2016
+-
+PUBLICATION
+-
+Energy Research
+
+[Paragraph 38]
+Publication:
+Innovation through Research
+
+[Paragraph 39]
+Renewable Energies and Energy Efficiency: Projects and Results of Research Funding in 2015
+
+[Paragraph 40]
+2017 RENEWABLE ENERGY SOURCES ACT
+
+[Paragraph 41]
+The 2017 Renewable Energy Sources Act has ushered in the next phase of the energy transition: funding rates for renewable electricity are no longer fixed by government, but are basically determined via a competitive market-based auction scheme – a fundamental change in funding renewable energy.
+
+[Paragraph 42]
+The expansion of renewable energy continues to be one of the key pillars of the energy transition. The share of renewable energy is to be increased from its present level of around 32% up to 40-45% in 2025 and up to 65% in 2030 according to the coalition agreement. The next phase of the energy transition will focus on bringing about more competition, a continuous expansion with effective steering, restrictions on costs, stakeholder diversity and dovetailing with grid expansion.
+
+[Paragraph 43]
+The Renewable Energy Sources Act (EEG), which entered into force in 2000, is a key driving force for the expansion of renewable energy in Germany. The 2014 revision of the Renewable Energy Sources Act was an important step towards setting the energy transition on a path to success. Find out more about the Renewable Energy Sources Act and its 2014 revision here (in German).
+
+The 2017 Renewable Energy Sources Act is currently the key instrument to achieve effective annual quantitative steering and to bring renewables closer to the market. Since 1 January 2017, the level of funding has been determined on the market by auction. The core aspects of the revised Renewable Energy Sources Act are outlined in this presentation (in German) (PDF, 552 KB). Further information can be found here (in German).
+
+A package of measures is to ensure that the 2017 Renewable Energy Sources Act maintains stakeholder diversity. For example, simplified auction models have been introduced, and the conditions applying to citizens’ energy companies taking part in onshore wind auctions have been relaxed. Further to this, small PV installations of up to 750 kW are exempted from the auctions.
+
+[Paragraph 44]
+Questions on the PV auction procedures:
+
+[Paragraph 45]
+INFOGRAPHICS
+-
+Renewable Energy
+
+[Paragraph 46]
+Infographics:
+Sum of the price on the electricity exchange and the renewable energy surcharge in cent/kWh
+
+[Paragraph 47]
+INFOGRAPHICS
+-
+Energy prices and transparency for consumers
+
+[Paragraph 48]
+Infographics:
+Financial contribution to the 2017 EEG surcharge determined by end consumer group
+
+[Paragraph 49]
+INFOGRAPHICS
+-
+Renewable Energy
+
+[Paragraph 50]
+Infographics:
+Gross power production in Germany
+
+[Paragraph 51]
+INFOGRAPHICS
+-
+Renewable Energy
+
+[Paragraph 52]
+Infographics:
+Development of Electricity Generation from Renewables in Germany
+
+[Paragraph 53]
+IMPORTING RENEWABLES FROM OTHER EUROPEAN MEMBER STATES
+
+[Paragraph 54]
+The 2017 Renewable Energy Sources Act is anchoring the energy transition on a cross-border basis: auctions for funding for renewable energy are now to be opened up to other countries: 5% of new renewables capacity to be installed each year will be opened up to installations in other European Member States (approx. 300 megawatts/year). The cross-border auctions will take place in addition to the national auctions, which are only open to installations located in Germany.
+
+[Paragraph 55]
+In 2016, initial experience was gathered with Denmark by means of a pilot project on reciprocal opening of auctions for ground-mounted PV installations. The auctions held by the Federal Network Agency and the Danish energy agency were open to bidders with installations located in Germany or in Denmark. These were the first cross-border auctions in Europe.
+
+[Paragraph 56]
+Drawing on experience gained from this tender, further cross-border auctions are planned to be carried out in the future. Also, these cross-border auctions are to be extended to include the possibility to cooperate on onshore wind energy projects.
+
+[Paragraph 57]
+More than half our energy is used for heating and cooling purposes. If we want the energy transition to be successful, it is therefore crucial to also expand the use of renewable energy in the heating sector.
+
+[Paragraph 58]
+Renewables are taking on an ever more important role in the heating market. Between 2000 and 2016, the share of renewables in final energy consumption for heating and cooling tripled, rising from 4.4% to 13.4%.
+
+[Paragraph 59]
+Within the heat market, the use of renewable energies is regulated by the Renewable Energies Heat Act. Under this law, builders of new buildings are required to generate a percentage of their heating requirements from renewable sources of energy, to undertake certain compensatory measures such as installing additional insulation, or to use combined heat and power systems or district heating.
+
+[Paragraph 60]
+In addition to the Renewable Energies Heat Act, the Federal Government uses the Market Incentive Programme (MAP) to increase the proportion of heat generated from renewable sources. Under this programme, assistance is provided primarily for existing buildings to promote the use of renewable energy technology in the heat market, such as solar thermal installations, wood pellet heating systems and efficient heat pumps.
+
+[Paragraph 61]
+In the transport sector, biofuels like bioethanol, biodiesel and biogas have been helping to cover the energy supply and to mitigate climate change for several years now. In 2016, the share of final energy consumption in transport covered by renewable energy stood at 5.1%. The renewables in question consisted almost entirely of biofuels for cars, trucks, trains, ships and aircraft. But renewables are also becoming ever more important when it comes to powering more electric vehicles. Electric mobility is low-carbon mobility and helps to bring electricity from renewable sources, such as solar and wind energy, into the transport sector.
+
+[Paragraph 62]
+The Energy Export Initiative provides support for small and medium-sized companies in Germany’s energy sector, and helps them access new markets abroad.
+
+[Paragraph 63]
+The initiative targets companies that provide solutions around renewable energy, energy efficiency, smart grids and energy storage. The focus is also shifting to new technologies like power-to-gas and fuel cells. So why don’t you use this export initiative to boost your company’s exports? For more detailed information about the initiative and its various components and for an events calendar, please click here and visit the export initiative’s website.
+
+[Paragraph 64]
+External sites:
+Exportinitiative Energie
+
+[Paragraph 65]
+Please support the Ministry’s public relations work: We need your consent to be able to measure your user activity on our website using etracker. A pseudonymised evaluation of this data by etracker helps us to improve our website. You can revoke your consent at any time for the future. Once you have made your selection, the consent management screen will appear at the bottom of the page. You can use this to stop or to reactivate the statistical evaluation at any point. You can reactivate tracking by dragging the slider in the opposite direction.
+
+[Paragraph 66]
+Strictly necessary (cannot be deselected)
+
+[Paragraph 67]
+Consent to the use of JW Player for video streaming
+
+[Paragraph 68]
+You can find detailed information on your rights and how we protect your privacy in our privacy policy.
+

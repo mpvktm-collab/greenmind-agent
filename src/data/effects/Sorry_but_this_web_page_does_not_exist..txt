@@ -1,0 +1,19 @@
+TITLE: Sorry, but this web page does not exist.
+SOURCE: https://www.epa.gov/climate-indicators
+SCRAPED: 2026-03-10T21:14:47.463564
+======================================================================
+
+HEADINGS:
+H1: Sorry, but this web page does not exist.
+H2: The EPA wants to help you find what you are looking for.
+
+======================================================================
+
+CONTENT:
+
+[Paragraph 1]
+An official website of the United States government
+
+[Paragraph 2]
+To report problems with our website, or to suggest improvements to our website, please use the "Contact Us" link on the page where you see a problem, or where you would like to suggest an improvement. There are "Contact Us" links at the upper right and bottom of each web page.
+

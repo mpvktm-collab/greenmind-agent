@@ -1,0 +1,25 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+
+# Vector stores (will be created on deployment)
+vector_store/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db

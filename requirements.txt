@@ -1,0 +1,33 @@
+# Core frameworks - exact versions that worked
+langchain==0.1.0
+langchain-core==0.1.10
+langchain-community==0.0.10
+langchain-google-genai==0.0.5
+google-generativeai==0.3.2
+
+# UI Framework
+streamlit==1.29.0
+
+# Vector Databases
+faiss-cpu==1.7.4
+chromadb==0.4.22
+
+# Search and Data Sources
+duckduckgo-search==4.1.1
+wikipedia-api==0.6.0
+
+# Document Processing
+pypdf==3.17.4
+
+# Web Scraping
+selenium==4.15.0
+webdriver-manager==4.0.1
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+pandas==2.1.3
+plotly==5.18.0
+
+# MCP
+mcp==1.26.0

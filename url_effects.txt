@@ -1,0 +1,26 @@
+# ENVIRONMENTAL EFFECTS URLS
+# Add one URL per line, lines starting with # are ignored
+
+# WHO - Air Pollution Health Effects
+https://www.who.int/health-topics/air-pollution
+
+# EPA - Climate Change Indicators
+https://www.epa.gov/climate-indicators
+
+# IPCC - Climate Change Reports
+https://www.ipcc.ch/reports/
+
+# UNEP - Global Environment Outlook
+https://www.unep.org/resources/global-environment-outlook
+
+# NASA - Climate Change Effects
+https://climate.nasa.gov/effects/
+
+# WHO - Climate Change and Health
+https://www.who.int/news-room/fact-sheets/detail/climate-change-and-health
+
+# UN - Environmental Consequences
+https://www.un.org/en/climatechange/science/climate-issues/environmental-consequences
+
+# World Bank - Environment and Health
+https://www.worldbank.org/en/topic/environment/brief/environment-and-health

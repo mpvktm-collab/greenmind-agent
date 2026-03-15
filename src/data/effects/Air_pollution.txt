@@ -1,0 +1,114 @@
+TITLE: Air pollution
+SOURCE: https://www.who.int/health-topics/air-pollution
+SCRAPED: 2026-03-10T21:14:43.224529
+======================================================================
+
+HEADINGS:
+H1: Air pollution
+H2: News
+H2: Latest publications
+H2: Documents
+H2: Feature stories
+H2: Events
+H3: Air quality monitoring for enhanced understanding of health impacts and beyond
+H3: Air quality indexes: key considerations and roadmaps for best practices
+H3: Health risks of air pollution in Europe: HRAPIE-2 project: updated guidance on concentration–response...
+H3: WHO strategic approach on air quality, energy access and health
+H3: 2025 Tracking SDG7 Report
+H3: 2025 Tracking SDG7 Report: Executive Summary
+H3: Integrating health in urban and territorial planning: the directory
+H3: Health science and policy summaries- advanced draft
+H3: The role of health workers for clean air
+H3: Air pollution: susceptible and vulnerable groups
+H3: Green and blue spaces for healthier cities and cleaner air
+H3: WHO's work on air quality, energy and health
+H3: WHO press conference on global health issues – 17 March 2025
+H3: Doctors for Clean Air and Climate Action: Who We Are and What We Do
+H3: Why we need cleaner air: Maria Neira at TEDx Athens
+H3: Clean air & energy for health webinar #1 - New opportunities for air pollution and health education
+
+======================================================================
+
+CONTENT:
+
+[Paragraph 1]
+Air pollution is contamination of the indoor or outdoor environment by any chemical, physical or biological agent that modifies the natural characteristics of the atmosphere.
+
+[Paragraph 2]
+Household combustion devices, motor vehicles, industrial facilities and forest fires are common sources of air pollution. Pollutants of major public health concern include particulate matter, carbon monoxide, ozone, nitrogen dioxide and sulfur dioxide. Outdoor and indoor air pollution cause respiratory and other diseases and are important sources of morbidity and mortality.
+
+[Paragraph 3]
+WHO data show that almost all of the global population (99%) breathe air that exceeds WHO guideline limits and contains high levels of pollutants, with low- and middle-income countries suffering from the highest exposures.
+
+[Paragraph 4]
+Air quality is closely linked to the earth’s climate and ecosystems globally. Many of the drivers of air pollution (i.e. combustion of fossil fuels) are also sources of greenhouse gas emissions. Policies to reduce air pollution, therefore, offer a win-win strategy for both climate and health, lowering the burden of disease attributable to air pollution, as well as contributing to the near- and long-term mitigation of climate change.
+
+[Paragraph 5]
+Santiago de Chile Declaration launched to advance clean air and environmental justice in Latin America
+
+[Paragraph 6]
+WHO unveils health and environment scorecards for 194 countries
+
+[Paragraph 7]
+Energy access has improved, yet international financial support still needed to boost progress and address disparities
+
+[Paragraph 8]
+WHO’s “Beat the Heat” initiative making strides to protect workers and event participants from extreme heat and related environmental hazards
+
+[Paragraph 9]
+Accelerating access to electricity in health-care facilities
+
+[Paragraph 10]
+Estimating the morbidity from air pollution and its economic costs
+
+[Paragraph 11]
+Identifying solutions for countries
+
+[Paragraph 12]
+Synthesizing evidence and knowledge on air pollution
+
+[Paragraph 13]
+Air pollution: The invisible health threat
+
+[Paragraph 14]
+Launch of WHO's Household Energy Policy Repository
+
+[Paragraph 15]
+What are the WHO Air quality guidelines?
+
+[Paragraph 16]
+Transitioning to cleaner cooking
+
+[Paragraph 17]
+Episode #141 – Air pollution damages young brains
+
+[Paragraph 18]
+Did you know that the air you breathe can harm your brain, and increase your risk for dementia, anxiety and depression ? Nine out of 10 people around the world breathe air that does not meet WHO’s recommended air quality standards. Air pollution kills 7 million people every year. What are cities like London, Bogotá and Beijing doing to clean their air? Dr Maria Neira explains in Science in 5.
+
+[Paragraph 19]
+Episode #66 - Air pollution, a public health emergency
+
+[Paragraph 20]
+Why does WHO consider air pollution a public health emergency? If you live in highly polluted areas does COVID-19 affect you differently? WHO’s Dr Maria Neira explains in Science in 5.
+
+[Paragraph 21]
+Episode #56 - Air pollution & COVID-19
+
+[Paragraph 22]
+What have we learned about air pollution and COVID-19? Learn about six air pollutants that are harming your health. Dr Maria Neira explains findings from WHO’s new air quality guidelines in Science in 5.
+
+[Paragraph 23]
+Episode #9 - Air pollution & COVID-19
+
+[Paragraph 24]
+How does air pollution affect our body during the pandemic ? Learn about air pollution and COVID-19 from Dr Maria Neira in Science in 5.
+
+[Paragraph 25]
+Webinar: Evidence on air pollution, energy access, climate change and health: Launch of Phase 2 of WHO’s Science and Policy Summaries (SPS)
+
+[Paragraph 26]
+A spotlight on Paris - a dialogue with Mayor Anne Hidalgo on promoting health, clean air, and climate resilience
+
+[Paragraph 27]
+Webinar: Launch of WHO’s Science and Policy Summaries (SPS) on Air Quality, Energy and Health
+
