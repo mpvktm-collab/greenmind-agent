@@ -9,7 +9,7 @@ google-generativeai==0.3.2
 streamlit==1.29.0
 
 # Vector Databases
-faiss-cpu==1.13.2
+faiss-cpu==1.7.4
 chromadb==0.4.22
 
 # Search and Data Sources
