@@ -13,7 +13,7 @@ from src.mcp.client.mcp_client import MCPClient
 from config import Config
 
 # Print debug info
-print(f"Starting GreenMind app...")
+print("Starting GreenMind app...")
 print(f"MCP_HOST from env: {os.getenv('MCP_HOST')}")
 print(f"MCP_PORT from env: {os.getenv('MCP_PORT')}")
 
@@ -107,14 +107,12 @@ st.markdown("""
         margin: 8px 0;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         border: 1px solid #e0e0e0;
-        font-family: monospace;
     }
     .stChatMessage p {
         font-weight: normal;
         margin-bottom: 0.5rem;
         font-size: 1rem;
         line-height: 1.5;
-        font-family: monospace;
     }
     .stChatMessage h1, .stChatMessage h2, .stChatMessage h3 {
         font-size: 1.2rem !important;
@@ -122,43 +120,10 @@ st.markdown("""
         margin-top: 0.5rem !important;
         margin-bottom: 0.5rem !important;
         color: #2E7D32;
-        font-family: Arial, sans-serif;
     }
     .stChatMessage strong {
         font-weight: 600;
         color: #1e3a2e;
-    }
-    
-    /* Comparison table styling */
-    .comparison-city {
-        font-weight: bold;
-        color: #2E7D32;
-        margin-top: 0.5rem;
-        margin-bottom: 0.2rem;
-    }
-    .comparison-row {
-        margin-left: 1rem;
-        margin-bottom: 0.2rem;
-    }
-    .green-text {
-        color: #00AA00;
-        font-weight: bold;
-    }
-    .yellow-text {
-        color: #CCCC00;
-        font-weight: bold;
-    }
-    .orange-text {
-        color: #FF8800;
-        font-weight: bold;
-    }
-    .red-text {
-        color: #FF0000;
-        font-weight: bold;
-    }
-    .purple-text {
-        color: #AA00AA;
-        font-weight: bold;
     }
     
     /* Sidebar styling */
@@ -269,31 +234,52 @@ MAJOR_CITIES = [
     'oslo', 'helsinki', 'dublin', 'edinburgh', 'glasgow', 'manchester', 'birmingham'
 ]
 
-# Function to call MCP tool
+# Function to call MCP tool with detailed debugging
 async def call_mcp_tool(tool_name: str, input_text: str):
-    """Call a tool via MCP client"""
-    # Get MCP server details from environment
+    """Call a tool via MCP client with detailed debugging"""
     mcp_host = os.getenv('MCP_HOST', 'localhost')
     mcp_port = int(os.getenv('MCP_PORT', '8765'))
     
     print(f"Attempting to connect to MCP server at {mcp_host}:{mcp_port}")
     
     try:
-        async with MCPClient(host=mcp_host, port=mcp_port) as client:
-            print(f"Connected to MCP server successfully")
-            
-            # Check connection
-            if not await client.ping():
-                print("Ping failed")
-                return "Error: Could not connect to MCP Server. Make sure it's running."
-            
-            print(f"Ping successful, calling tool {tool_name}")
-            # Call the tool
-            result = await client.call_tool(tool_name, input=input_text)
-            print(f"Tool call successful")
-            return result
+        print("Creating MCPClient instance...")
+        client = MCPClient(host=mcp_host, port=mcp_port)
+        
+        print("Attempting to connect...")
+        connected = await client.connect()
+        
+        if not connected:
+            print("Failed to connect - no connection established")
+            return "Error: Could not connect to MCP Server. Make sure it's running."
+        
+        print("Connected successfully!")
+        
+        print("Sending ping...")
+        ping_result = await client.ping()
+        print(f"Ping result: {ping_result}")
+        
+        if not ping_result:
+            print("Ping failed")
+            await client.disconnect()
+            return "Error: MCP Server ping failed."
+        
+        print(f"Ping successful, calling tool {tool_name}")
+        result = await client.call_tool(tool_name, input=input_text)
+        print("Tool call successful")
+        
+        await client.disconnect()
+        return result
+    except asyncio.TimeoutError:
+        print("Connection timeout - server not responding")
+        return "Error: Connection timeout. MCP Server not responding."
+    except ConnectionRefusedError:
+        print("Connection refused - server may not be running or port is wrong")
+        return "Error: Connection refused. Check if MCP Server is running and port is correct."
     except Exception as e:
-        print(f"Error calling tool: {str(e)}")
+        print(f"Unexpected error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return f"Error calling tool: {str(e)}"
 
 # Clean response function
