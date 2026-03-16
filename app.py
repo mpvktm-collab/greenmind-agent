@@ -1,4 +1,4 @@
-# app.py - Enhanced with better query understanding for comparisons
+# app.py - Complete version with debug logging
 import streamlit as st
 import sys
 import os
@@ -11,6 +11,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.mcp.client.mcp_client import MCPClient
 from config import Config
+
+# Print debug info
+print(f"Starting GreenMind app...")
+print(f"MCP_HOST from env: {os.getenv('MCP_HOST')}")
+print(f"MCP_PORT from env: {os.getenv('MCP_PORT')}")
 
 # Page configuration
 st.set_page_config(
@@ -234,10 +239,10 @@ if 'messages' not in st.session_state:
     ]
     today_quote = welcome_quotes[datetime.now().day % len(welcome_quotes)]
     
-    # Store quote data separately, not as HTML in message
+    # Store quote data separately
     st.session_state.quote_data = today_quote
     
-    # Store plain text message without HTML
+    # Store plain text message
     st.session_state.messages = [{
         "role": "assistant",
         "content": f"Hello! I'm GreenMind, your environmental sustainability advisor.\n\n"
@@ -252,76 +257,51 @@ if 'messages' not in st.session_state:
                   f"How can I help you protect our planet today?"
     }]
 
-# List of major cities for reference - Updated with requested cities
+# List of major cities
 MAJOR_CITIES = [
-    # Indian cities - updated with Bombay, Cochin, Kochi, Ernakulam, Trivandrum
     'delhi', 'mumbai', 'bombay', 'chennai', 'hyderabad', 'kolkata', 'calcutta', 'bangalore', 
     'cochin', 'kochi', 'ernakulam', 'trivandrum', 'thiruvananthapuram',
     'ahmedabad', 'pune', 'jaipur', 'lucknow', 'kanpur', 'nagpur', 'indore', 'bhopal',
-    'visakhapatnam', 'patna', 'vadodara', 'surat', 'coimbatore', 'mysore',
-    
-    # US cities
-    'new york', 'los angeles', 'chicago', 'california', 'san francisco', 'seattle', 
-    'boston', 'washington', 'miami', 'dallas', 'houston', 'philadelphia', 'atlanta',
-    'detroit', 'denver', 'phoenix', 'portland', 'san diego', 'las vegas',
-    
-    # UK/Europe
-    'london', 'manchester', 'birmingham', 'liverpool', 'paris', 'berlin', 'munich',
-    'hamburg', 'frankfurt', 'rome', 'milan', 'barcelona', 'madrid', 'amsterdam',
-    'brussels', 'vienna', 'zurich', 'stockholm', 'copenhagen', 'oslo', 'helsinki',
-    'warsaw', 'prague', 'budapest', 'dublin', 'edinburgh', 'glasgow',
-    
-    # Asia
-    'tokyo', 'osaka', 'kyoto', 'yokohama', 'nagoya', 'sapporo', 'beijing', 'shanghai',
-    'guangzhou', 'shenzhen', 'chengdu', 'hong kong', 'seoul', 'busan', 'incheon',
-    'singapore', 'bangkok', 'phuket', 'chiang mai', 'kuala lumpur', 'jakarta', 'bali',
-    'manila', 'ho chi minh', 'hanoi', 'taipei', 'colombo',
-    
-    # Australia/NZ
-    'sydney', 'melbourne', 'brisbane', 'perth', 'adelaide', 'canberra', 'auckland',
-    'wellington', 'christchurch',
-    
-    # Middle East/Africa
-    'dubai', 'abu dhabi', 'doha', 'riyadh', 'jeddah', 'dammam', 'kuwait', 'muscat',
-    'tel aviv', 'jerusalem', 'istanbul', 'cairo', 'alexandria', 'casablanca', 'tunis',
-    'algiers', 'lagos', 'nairobi', 'cape town', 'johannesburg', 'durban',
-    
-    # South America
-    'sao paulo', 'rio de janeiro', 'brasilia', 'salvador', 'fortaleza', 'buenos aires',
-    'cordoba', 'rosario', 'santiago', 'valparaiso', 'lima', 'bogota', 'medellin',
-    'caracas', 'quito', 'guayaquil', 'la paz', 'montevideo', 'asuncion',
-    
-    # Canada
-    'toronto', 'vancouver', 'montreal', 'calgary', 'ottawa', 'edmonton', 'quebec',
-    'winnipeg', 'hamilton', 'halifax',
-    
-    # Mexico/Central America
-    'mexico city', 'guadalajara', 'monterrey', 'puebla', 'tijuana', 'cancun',
-    'havana', 'san jose', 'panama city'
+    'new york', 'los angeles', 'chicago', 'london', 'paris', 'tokyo', 'beijing', 'shanghai',
+    'sydney', 'melbourne', 'toronto', 'vancouver', 'mexico city', 'sao paulo', 'dubai',
+    'singapore', 'hong kong', 'seoul', 'bangkok', 'jakarta', 'moscow', 'berlin', 'rome',
+    'madrid', 'barcelona', 'amsterdam', 'brussels', 'vienna', 'zurich', 'stockholm',
+    'oslo', 'helsinki', 'dublin', 'edinburgh', 'glasgow', 'manchester', 'birmingham'
 ]
 
 # Function to call MCP tool
 async def call_mcp_tool(tool_name: str, input_text: str):
     """Call a tool via MCP client"""
+    # Get MCP server details from environment
+    mcp_host = os.getenv('MCP_HOST', 'localhost')
+    mcp_port = int(os.getenv('MCP_PORT', '8765'))
+    
+    print(f"Attempting to connect to MCP server at {mcp_host}:{mcp_port}")
+    
     try:
-        async with MCPClient() as client:
+        async with MCPClient(host=mcp_host, port=mcp_port) as client:
+            print(f"Connected to MCP server successfully")
+            
             # Check connection
             if not await client.ping():
+                print("Ping failed")
                 return "Error: Could not connect to MCP Server. Make sure it's running."
             
+            print(f"Ping successful, calling tool {tool_name}")
             # Call the tool
             result = await client.call_tool(tool_name, input=input_text)
+            print(f"Tool call successful")
             return result
     except Exception as e:
+        print(f"Error calling tool: {str(e)}")
         return f"Error calling tool: {str(e)}"
 
-# Enhanced function to clean and structure responses elegantly
+# Clean response function
 def clean_response(text):
     """Transform raw document text into clean, elegant responses"""
     if not isinstance(text, str):
         return text
     
-    # Remove all technical markers
     text = re.sub(r'\[\s*Paragraph\s+\d+\s*\]', '', text)
     text = re.sub(r'H\d+:\s*', '', text)
     text = re.sub(r'TITLE:.*?\n', '', text)
@@ -331,219 +311,88 @@ def clean_response(text):
     text = re.sub(r'CONTENT:', '', text)
     text = re.sub(r'\[\s*Source:.*?\].*?\n', '', text)
     text = re.sub(r'https?://\S+', '', text)
-    text = re.sub(r'www\.\S+', '', text)
     
-    # Remove navigation and metadata lines
     lines = text.split('\n')
     relevant_lines = []
     
     for line in lines:
         line = line.strip()
-        
-        # Skip empty lines at start
-        if not line and not relevant_lines:
+        if not line:
             continue
-            
-        # Skip navigation/metadata
-        if any(skip in line.lower() for skip in [
-            'language selection', 'search', 'menu', 'you are here', 
-            'page details', 'about this site', 'give feedback', 
-            'follow us', 'contact us', 'terms and conditions',
-            'privacy', 'accessibility', 'symbols', 'footer',
-            'share this page', 'date modified', 'was this page helpful',
-            'table of contents', 'on this page', 'related links',
-            'government of canada', 'government of canada corporate'
-        ]):
+        if any(skip in line.lower() for skip in ['language selection', 'search', 'menu', 'you are here']):
             continue
-            
-        # Skip lines that are just URLs or technical notes
-        if line.startswith('http') or 'www.' in line:
-            continue
-            
-        # Skip lines about website restructuring
-        if any(phrase in line.lower() for phrase in [
-            'this content was part of our previous website',
-            'no longer available',
-            'we\'ve recently upgraded',
-            'restructured our content',
-            'sent straight to your inbox',
-            'the best of the iea',
-            'top energy experts'
-        ]):
-            continue
-            
-        # Skip lines with just numbers or special characters
-        if re.match(r'^[\d\s\-_=*]+$', line):
-            continue
-            
-        # Clean up the line
-        line = re.sub(r'^\d+\.\s*', '', line)  # Remove numbered lists
-        line = re.sub(r'^\*\s*', '', line)     # Remove bullet points
-        line = re.sub(r'\s+', ' ', line)       # Normalize spaces
-        
-        if line:
-            relevant_lines.append(line)
+        line = re.sub(r'^\d+\.\s*', '', line)
+        line = re.sub(r'^\*\s*', '', line)
+        line = re.sub(r'\s+', ' ', line)
+        relevant_lines.append(line)
     
-    # Join and clean up
     text = '\n'.join(relevant_lines)
-    
-    # Remove multiple blank lines
     text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)
-    
-    # Remove multiple spaces
     text = re.sub(r' +', ' ', text)
-    
-    # Add section breaks for better readability
-    text = re.sub(r'(United States|Canada|US|USA|Canadian)', r'\n\n\1', text)
     
     return text.strip()
 
 # Function to detect if query is asking for comparison
 def is_comparison_query(query):
-    """Detect if the query is asking for a comparison"""
     query_lower = query.lower()
-    
-    comparison_indicators = [
-        'compare', 'comparison', 'versus', 'vs', 'difference between',
-        'which is better', 'which has better', 'rank', 'ranking',
-        'verses', 'v/s', 'top cities', 'best cities', 'worst cities'
-    ]
-    
-    return any(indicator in query_lower for indicator in comparison_indicators)
+    indicators = ['compare', 'comparison', 'versus', 'vs', 'difference between', 'rank', 'ranking']
+    return any(indicator in query_lower for indicator in indicators)
 
 # Function to extract cities from query
 def extract_cities(query):
-    """Extract city names from query"""
     query_lower = query.lower()
     found_cities = []
-    
     for city in MAJOR_CITIES:
         if city in query_lower:
-            # Handle special cases
-            if city == 'calcutta' and 'kolkata' not in found_cities:
-                found_cities.append('kolkata')
-            elif city == 'bombay' and 'mumbai' not in found_cities:
+            if city == 'bombay' and 'mumbai' not in found_cities:
                 found_cities.append('mumbai')
+            elif city == 'calcutta' and 'kolkata' not in found_cities:
+                found_cities.append('kolkata')
             elif city == 'cochin' and 'kochi' not in found_cities:
-                found_cities.append('kochi')
-            elif city == 'ernakulam' and 'kochi' not in found_cities:
                 found_cities.append('kochi')
             elif city == 'trivandrum' and 'thiruvananthapuram' not in found_cities:
                 found_cities.append('thiruvananthapuram')
             elif city not in found_cities:
                 found_cities.append(city)
-    
     return found_cities
 
 # Function to handle comparison queries
 async def handle_comparison(query):
-    """Handle comparison queries by calling multiple tools"""
     query_lower = query.lower()
     cities = extract_cities(query)
     
-    # If we have cities from extract_cities, use them
-    if cities:
-        print(f"Extracted cities: {cities}")
-    else:
-        # Try to parse cities from "and" or commas
-        import re
-        # Look for patterns like "delhi and mumbai" or "delhi, mumbai"
-        and_pattern = r'(\w+)\s+and\s+(\w+)'
-        comma_pattern = r'(\w+)\s*,\s*(\w+)'
-        
-        and_match = re.search(and_pattern, query_lower)
-        if and_match:
-            city1 = and_match.group(1)
-            city2 = and_match.group(2)
-            # Validate that these are actual cities
-            if city1 in MAJOR_CITIES or any(city1 in city for city in MAJOR_CITIES):
-                cities.append(city1)
-            if city2 in MAJOR_CITIES or any(city2 in city for city in MAJOR_CITIES):
-                cities.append(city2)
-            print(f"Parsed cities from 'and': {cities}")
-        
-        if not cities:
-            comma_match = re.search(comma_pattern, query_lower)
-            if comma_match:
-                city1 = comma_match.group(1)
-                city2 = comma_match.group(2)
-                if city1 in MAJOR_CITIES or any(city1 in city for city in MAJOR_CITIES):
-                    cities.append(city1)
-                if city2 in MAJOR_CITIES or any(city2 in city for city in MAJOR_CITIES):
-                    cities.append(city2)
-                print(f"Parsed cities from comma: {cities}")
-    
-    # If still no cities, use defaults based on query content
     if not cities:
-        if 'carbon' in query_lower and 'air quality' in query_lower:
-            cities = ['delhi', 'mumbai', 'london', 'new york']
-        elif 'carbon' in query_lower:
-            cities = ['delhi', 'london', 'new york', 'tokyo']
-        elif 'air quality' in query_lower or 'pollution' in query_lower:
-            cities = ['delhi', 'beijing', 'mumbai', 'los angeles']
-        else:
-            cities = ['delhi', 'mumbai', 'london', 'new york']
+        cities = ['delhi', 'mumbai', 'london', 'new york']
     
     results = {}
-    
-    # Determine which tools to call based on query
     call_carbon = 'carbon' in query_lower or 'footprint' in query_lower
-    call_pollution = 'pollution' in query_lower or 'air quality' in query_lower or 'aqi' in query_lower or 'index' in query_lower
+    call_pollution = 'pollution' in query_lower or 'air quality' in query_lower or 'aqi' in query_lower
     
-    # If neither is specified, call both by default for comparison
     if not call_carbon and not call_pollution:
         call_carbon = True
         call_pollution = True
     
-    # Call appropriate tools for each city
-    for city in cities[:3]:  # Limit to 3 cities for readability
+    for city in cities[:3]:
         if call_carbon:
             result = await call_mcp_tool("Carbon_Footprint_Calculator", city)
             results[f"carbon_{city}"] = result
-        
         if call_pollution:
             result = await call_mcp_tool("Pollution_Health_Index", city)
             results[f"aqi_{city}"] = result
     
     return results, cities, call_carbon, call_pollution
 
-# Function to get color class for a value
-def get_color_class(value, type='aqi'):
-    """Get CSS color class based on value"""
-    if type == 'aqi':
-        if value <= 50:
-            return 'green-text'
-        elif value <= 100:
-            return 'yellow-text'
-        elif value <= 150:
-            return 'orange-text'
-        elif value <= 200:
-            return 'red-text'
-        else:
-            return 'purple-text'
-    elif type == 'carbon':
-        if value <= 2.0:
-            return 'green-text'
-        elif value <= 5.0:
-            return 'yellow-text'
-        else:
-            return 'red-text'
-    return ''
-
-# Function to format comparison results with proper multi-line formatting
+# Function to format comparison results
 def format_comparison_results(results, cities, query, call_carbon, call_pollution):
-    """Format comparison results in a readable way with multi-line format"""
-    
     output = []
     output.append("=" * 70)
     output.append("COMPARISON RESULTS")
     output.append("=" * 70)
     output.append("")
     
-    # Process each city individually for multi-line display
     for i, city in enumerate(cities[:3]):
         if i > 0:
-            output.append("")  # Add line break between cities
+            output.append("")
             output.append("-" * 40)
             output.append("")
         
@@ -552,253 +401,70 @@ def format_comparison_results(results, cities, query, call_carbon, call_pollutio
         
         if call_carbon and f"carbon_{city}" in results:
             carbon_text = results[f"carbon_{city}"]
-            # Extract carbon value
             carbon_match = re.search(r'(\d+\.?\d*)\s*tons', carbon_text)
             if carbon_match:
-                carbon_value = float(carbon_match.group(1))
-                color_class = get_color_class(carbon_value, 'carbon')
-                
-                # Create visual bar for carbon
-                bar_length = min(20, int((carbon_value / 10) * 20))
-                bar = "█" * bar_length + "░" * (20 - bar_length)
-                
-                # Determine rating text
-                if carbon_value <= 2.0:
-                    rating = "Good"
-                elif carbon_value <= 5.0:
-                    rating = "Moderate"
-                else:
-                    rating = "High"
-                
-                output.append(f"  CARBON FOOTPRINT:")
-                output.append(f"    Value: {carbon_value} tons CO2 per year")
-                output.append(f"    Rating: {rating}")
-                output.append(f"    Visual: [{bar}]")
-                output.append("")
+                carbon_value = carbon_match.group(1)
+                output.append(f"  CARBON FOOTPRINT: {carbon_value} tons CO2 per year")
         
         if call_pollution and f"aqi_{city}" in results:
             aqi_text = results[f"aqi_{city}"]
-            
-            # Extract AQI value
             aqi_match = re.search(r'AQI\):\s*(\d+)', aqi_text)
             if aqi_match:
-                aqi_value = int(aqi_match.group(1))
-                color_class = get_color_class(aqi_value, 'aqi')
+                aqi_value = aqi_match.group(1)
+                output.append(f"  AIR QUALITY INDEX: {aqi_value}")
                 
-                # Create visual bar for AQI
-                bar_length = min(20, int((aqi_value / 300) * 20))
-                bar = "█" * bar_length + "░" * (20 - bar_length)
-                
-                # Determine rating text
-                if aqi_value <= 50:
-                    rating = "Good"
-                elif aqi_value <= 100:
-                    rating = "Moderate"
-                elif aqi_value <= 150:
-                    rating = "Unhealthy for Sensitive Groups"
-                elif aqi_value <= 200:
-                    rating = "Unhealthy"
-                elif aqi_value <= 300:
-                    rating = "Very Unhealthy"
-                else:
-                    rating = "Hazardous"
-                
-                output.append(f"  POLLUTION INDEX / AIR QUALITY:")
-                output.append(f"    AQI: {aqi_value}")
-                output.append(f"    Rating: {rating}")
-                output.append(f"    Visual: [{bar}]")
-                output.append("")
-                
-                # Extract PM2.5 and PM10 values
                 pm25_match = re.search(r'PM2\.5:\s*(\d+)', aqi_text)
                 pm10_match = re.search(r'PM10:\s*(\d+)', aqi_text)
                 
                 if pm25_match:
-                    pm25 = pm25_match.group(1)
-                    pm25_color = 'green-text' if int(pm25) < 25 else 'yellow-text' if int(pm25) < 50 else 'red-text'
-                    output.append(f"    PM2.5: {pm25} μg/m³ [Safe: <25]")
-                
+                    output.append(f"  PM2.5: {pm25_match.group(1)} μg/m³")
                 if pm10_match:
-                    pm10 = pm10_match.group(1)
-                    pm10_color = 'green-text' if int(pm10) < 50 else 'yellow-text' if int(pm10) < 100 else 'red-text'
-                    output.append(f"    PM10: {pm10} μg/m³ [Safe: <50]")
-                
-                # Extract health recommendations
-                health_lines = [line for line in aqi_text.split('\n') if 'HEALTH' in line or 'RECOMMENDATIONS' in line]
-                if health_lines:
-                    output.append(f"    Health: {health_lines[0].strip()}")
+                    output.append(f"  PM10: {pm10_match.group(1)} μg/m³")
     
     output.append("")
     output.append("=" * 70)
     output.append("Note: These are simulated values for demonstration.")
-    output.append("For production, connect to real APIs like OpenAQ or WAQI.")
-    
     return "\n".join(output)
 
 # Function to process query with MCP
 async def process_with_mcp_async(user_query):
-    """Async version of query processing"""
     query_lower = user_query.lower()
     
-    # Check if this is a multi-city query (contains "and" or commas between cities)
-    city_indicators = [' and ', ',', '&']
-    has_multiple_cities = any(indicator in user_query for indicator in city_indicators)
-    
-    # Extract cities from query
-    extracted_cities = extract_cities(user_query)
-    
-    # Check if this is a multi-metric query (asks for both carbon and pollution)
-    has_carbon = any(word in query_lower for word in ['carbon', 'footprint', 'co2'])
-    has_pollution = any(word in query_lower for word in ['pollution', 'air quality', 'aqi', 'index'])
-    
-    # If multiple cities AND (carbon or pollution) are mentioned, treat as comparison
-    if (len(extracted_cities) >= 2 or has_multiple_cities) and (has_carbon or has_pollution):
-        print(f"Detected multi-city comparison query with {len(extracted_cities)} cities")
-        results, cities, call_carbon, call_pollution = await handle_comparison(user_query)
-        if results:
-            formatted = format_comparison_results(results, cities, user_query, call_carbon, call_pollution)
-            return formatted, "Comparison_Tool"
-    
-    # Check if this is a comparison query (original method)
-    if is_comparison_query(user_query):
+    # Check for comparison query
+    if is_comparison_query(user_query) or len(extract_cities(user_query)) >= 2:
         print("Detected comparison query")
         results, cities, call_carbon, call_pollution = await handle_comparison(user_query)
         if results:
             formatted = format_comparison_results(results, cities, user_query, call_carbon, call_pollution)
             return formatted, "Comparison_Tool"
     
-    # Health-related keywords should go to Effects tool
-    health_keywords = [
-        'cancer', 'health', 'disease', 'illness', 'sick', 'medical', 
-        'respiratory', 'cardiovascular', 'lung', 'heart', 'asthma',
-        'toxic', 'poison', 'hazardous', 'risk', 'mortality', 'death',
-        'chronic', 'acute', 'symptom', 'hospital', 'patient'
-    ]
-    
-    # Pollution/air quality keywords
-    pollution_keywords = [
-        'air quality', 'aqi', 'pollution index', 'health index', 
-        'pollution level', 'pm2.5', 'pm10', 'air pollution'
-    ]
-    
-    # Carbon footprint keywords
-    carbon_keywords = [
-        'carbon', 'footprint', 'co2', 'emission', 'greenhouse gas'
-    ]
-    
-    # Policy keywords
-    policy_keywords = [
-        'policy', 'policies', 'act', 'acts', 'regulation', 'law', 'government',
-        'agreement', 'treaty', 'legislation', 'prevalent', 'relevant',
-        'related to', 'pertaining to'
-    ]
-    
-    # Effects keywords
-    effects_keywords = [
-        'effect', 'impact', 'degradation', 'climate change',
-        'global warming', 'environmental impact'
-    ]
-    
-    # Web search keywords
-    search_keywords = [
-        'search', 'news', 'current', 'latest', 'recent', 'update'
-    ]
-    
-    # Wikipedia keywords - only when explicitly asked
-    wiki_keywords = [
-        'wikipedia'
-    ]
-    
-    # General knowledge keywords
-    general_keywords = [
-        'tell me about', 'what is', 'what are', 'explain', 
-        'describe', 'information on', 'tell me', 'main'
-    ]
-    
-    # Sustainability tips keywords
-    tips_keywords = [
-        'tip', 'advice', 'sustainable', 'green', 'eco friendly',
-        'how to', 'guide', 'suggestion'
-    ]
-    
-    # Priority 1: Health-related queries (most specific)
-    if any(keyword in query_lower for keyword in health_keywords):
-        print(f"Routing to Environmental_Effects_RAG (health query)")
+    # Simple keyword routing
+    if any(word in query_lower for word in ['cancer', 'health', 'disease']):
         tool = "Environmental_Effects_RAG"
-        result = await call_mcp_tool(tool, user_query)
-        cleaned_result = clean_response(result)
-        return cleaned_result, tool
-    
-    # Priority 2: Pollution index
-    elif any(keyword in query_lower for keyword in pollution_keywords):
-        print(f"Routing to Pollution_Health_Index")
+    elif any(word in query_lower for word in ['air quality', 'aqi', 'pollution']):
         tool = "Pollution_Health_Index"
-        result = await call_mcp_tool(tool, user_query)
-        return result, tool
-    
-    # Priority 3: Carbon footprint
-    elif any(keyword in query_lower for keyword in carbon_keywords):
-        print(f"Routing to Carbon_Footprint_Calculator")
+    elif any(word in query_lower for word in ['carbon', 'footprint', 'co2']):
         tool = "Carbon_Footprint_Calculator"
-        result = await call_mcp_tool(tool, user_query)
-        return result, tool
-    
-    # Priority 4: Sustainability tips
-    elif any(keyword in query_lower for keyword in tips_keywords):
-        print(f"Routing to Sustainability_Tips")
-        tool = "Sustainability_Tips"
-        result = await call_mcp_tool(tool, user_query)
-        return result, tool
-    
-    # Priority 5: Web search
-    elif any(keyword in query_lower for keyword in search_keywords):
-        print(f"Routing to Web_Search")
-        tool = "Web_Search"
-        result = await call_mcp_tool(tool, user_query)
-        return result, tool
-    
-    # Priority 6: General knowledge (routes to Policies RAG)
-    elif any(keyword in query_lower for keyword in general_keywords):
-        print(f"Routing to Environmental_Policies_RAG (general knowledge)")
+    elif any(word in query_lower for word in ['policy', 'act', 'regulation', 'law']):
         tool = "Environmental_Policies_RAG"
-        result = await call_mcp_tool(tool, user_query)
-        cleaned_result = clean_response(result)
-        return cleaned_result, tool
-    
-    # Priority 7: Wikipedia (only when explicitly asked)
-    elif any(keyword in query_lower for keyword in wiki_keywords):
-        print(f"Routing to Wikipedia_Knowledge")
-        tool = "Wikipedia_Knowledge"
-        result = await call_mcp_tool(tool, user_query)
-        return result, tool
-    
-    # Priority 8: Environmental effects
-    elif any(keyword in query_lower for keyword in effects_keywords):
-        print(f"Routing to Environmental_Effects_RAG")
+    elif any(word in query_lower for word in ['effect', 'impact', 'climate change']):
         tool = "Environmental_Effects_RAG"
-        result = await call_mcp_tool(tool, user_query)
-        cleaned_result = clean_response(result)
-        return cleaned_result, tool
-    
-    # Priority 9: Environmental policies
-    elif any(keyword in query_lower for keyword in policy_keywords):
-        print(f"Routing to Environmental_Policies_RAG")
-        tool = "Environmental_Policies_RAG"
-        result = await call_mcp_tool(tool, user_query)
-        cleaned_result = clean_response(result)
-        return cleaned_result, tool
-    
+    elif any(word in query_lower for word in ['tip', 'advice', 'sustainable']):
+        tool = "Sustainability_Tips"
+    elif any(word in query_lower for word in ['search', 'news', 'current']):
+        tool = "Web_Search"
+    elif any(word in query_lower for word in ['wikipedia']):
+        tool = "Wikipedia_Knowledge"
     else:
-        # Default to policies for general environmental queries
-        print(f"Routing to default: Environmental_Policies_RAG")
         tool = "Environmental_Policies_RAG"
-        result = await call_mcp_tool(tool, user_query)
-        cleaned_result = clean_response(result)
-        return cleaned_result, tool
+    
+    print(f"Routing to {tool}")
+    result = await call_mcp_tool(tool, user_query)
+    cleaned_result = clean_response(result)
+    return cleaned_result, tool
 
-# Wrapper function to maintain compatibility
+# Wrapper function
 def process_with_mcp(user_query):
-    """Wrapper for async function"""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     result, tool = loop.run_until_complete(process_with_mcp_async(user_query))
@@ -830,24 +496,30 @@ with st.sidebar:
     • City comparisons
     """)
     
-    # MCP Server Status
     st.markdown("---")
     st.subheader("MCP Server Status")
     
+    # Display MCP_HOST and MCP_PORT from environment
+    mcp_host = os.getenv('MCP_HOST', 'Not set')
+    mcp_port = os.getenv('MCP_PORT', 'Not set')
+    st.info(f"MCP Server: {mcp_host}:{mcp_port}")
+    
     # Test connection button
-    if st.button("Test Connection"):
+    if st.button("Test MCP Connection"):
         async def test_connection():
+            host = os.getenv('MCP_HOST', 'localhost')
+            port = int(os.getenv('MCP_PORT', '8765'))
             try:
-                async with MCPClient() as client:
+                async with MCPClient(host=host, port=port) as client:
                     if await client.ping():
                         st.session_state.mcp_connected = True
                         return "Connected"
                     else:
                         st.session_state.mcp_connected = False
                         return "Disconnected"
-            except:
+            except Exception as e:
                 st.session_state.mcp_connected = False
-                return "Disconnected"
+                return f"Error: {str(e)}"
         
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -855,41 +527,25 @@ with st.sidebar:
         loop.close()
         st.info(status)
     
-    # Display connection status
     if st.session_state.mcp_connected:
         st.markdown('<div class="status-box connected">MCP Server Connected</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="status-box disconnected">MCP Server Disconnected</div>', unsafe_allow_html=True)
-        st.markdown("Run `python greenmind_mcp.py` in a terminal to start the server.")
     
-    # Available tools
     st.markdown("---")
     st.subheader("Available Tools")
     tools_list = [
         "Environmental_Policies_RAG",
-        "Environmental_Effects_RAG (Health impacts)",
+        "Environmental_Effects_RAG",
         "Web_Search",
         "Wikipedia_Knowledge",
         "Pollution_Health_Index",
         "Carbon_Footprint_Calculator",
         "Sustainability_Tips",
-        "Comparison_Tool (Multi-city)"
+        "Comparison_Tool"
     ]
     for tool in tools_list:
         st.markdown(f'<div class="tool-item">• {tool}</div>', unsafe_allow_html=True)
-    
-    # Example queries
-    st.markdown("---")
-    st.subheader("Try These Queries")
-    st.markdown("""
-    • "What environmental factors cause cancer?"
-    • "Health effects of air pollution"
-    • "Compare carbon footprint of Delhi and London"
-    • "Air quality in Mumbai vs Tokyo"
-    • "Compare pollution index of Chennai and Hyderabad"
-    • "Compare air quality of Cochin and Trivandrum"
-    • "What is the carbon footprint and pollution index of Delhi and Mumbai?"
-    """)
     
     st.markdown("---")
     if st.button("Clear Conversation"):
@@ -900,9 +556,7 @@ with st.sidebar:
 
 # Display welcome message with quote
 if st.session_state.messages and len(st.session_state.messages) > 0:
-    # Show the first message (welcome) with quote
     with st.chat_message("assistant"):
-        # Create stylish quote HTML
         if 'quote_data' in st.session_state:
             quote_html = f'''
             <div class="elegant-quote">
@@ -911,11 +565,9 @@ if st.session_state.messages and len(st.session_state.messages) > 0:
             </div>
             '''
             st.markdown(quote_html, unsafe_allow_html=True)
-        
-        # Show the rest of the welcome message
         st.markdown(st.session_state.messages[0]["content"])
 
-# Display remaining messages (skip the first one since we already showed it with quote)
+# Display remaining messages
 for message in st.session_state.messages[1:]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -924,22 +576,17 @@ for message in st.session_state.messages[1:]:
 prompt = st.chat_input("Ask me about environmental sustainability...")
 
 if prompt:
-    # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
     
-    # Get response via MCP
     with st.chat_message("assistant"):
         with st.spinner("GreenMind is thinking..."):
             response, tool_used = process_with_mcp(prompt)
             st.markdown(response)
-            
-            # Show which tool was used
             if tool_used:
                 st.caption(f"Used tool: {tool_used}")
     
-    # Add assistant response
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.rerun()
 
