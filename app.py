@@ -1,10 +1,11 @@
-# app.py - Complete version with MCP session state management
+# app.py - Complete version with aggressive connection debugging
 import streamlit as st
 import sys
 import os
 import asyncio
 import re
 import socket
+import time
 from datetime import datetime
 
 # Add the project root to Python path
@@ -12,6 +13,47 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.mcp.client.mcp_client import MCPClient
 from config import Config
+
+# ============================================================
+# IMMEDIATE CONNECTION TEST
+# ============================================================
+print("=" * 70)
+print("IMMEDIATE CONNECTION TEST")
+print("=" * 70)
+
+mcp_host = os.getenv('MCP_HOST', 'greenmind-agent.onrender.com')
+mcp_port = int(os.getenv('MCP_PORT', '10000'))
+
+print(f"Testing connection to {mcp_host}:{mcp_port}")
+
+# Test DNS resolution
+try:
+    start = time.time()
+    ip = socket.gethostbyname(mcp_host)
+    dns_time = time.time() - start
+    print(f"DNS resolved: {mcp_host} -> {ip} in {dns_time:.2f}s")
+except Exception as e:
+    print(f"DNS resolution failed: {str(e)}")
+    ip = None
+
+# Test TCP connection with timeout
+if ip:
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5)
+        start = time.time()
+        result = sock.connect_ex((ip, mcp_port))
+        tcp_time = time.time() - start
+        if result == 0:
+            print(f"TCP connection successful to {ip}:{mcp_port} in {tcp_time:.2f}s")
+        else:
+            print(f"TCP connection failed to {ip}:{mcp_port}, error: {result} in {tcp_time:.2f}s")
+        sock.close()
+    except Exception as e:
+        print(f"TCP connection error: {str(e)}")
+
+print("=" * 70)
+# ============================================================
 
 # Initialize MCP client in session state (only once)
 if "mcp_client" not in st.session_state:
@@ -252,6 +294,7 @@ async def get_mcp_client():
             client = MCPClient(host=mcp_host, port=mcp_port, use_ssl=use_ssl)
             
             # Attempt to connect
+            print("Attempting to connect...")
             connected = await client.connect()
             if connected:
                 print("MCP client connected successfully")
@@ -503,30 +546,54 @@ with st.sidebar:
     mcp_port = os.getenv('MCP_PORT', 'Not set')
     st.info(f"MCP Server: {mcp_host}:{mcp_port}")
     
-    # Test connection button
+    # Test connection button with aggressive debugging
     if st.button("Test MCP Connection"):
-        async def test_connection():
-            client = await get_mcp_client()
-            if client and st.session_state.mcp_connected:
+        with st.spinner("Testing connection (this should take < 5 seconds)..."):
+            async def test_connection():
                 try:
-                    # Test ping with timeout
+                    print("Starting connection test...")
+                    mcp_host = os.getenv('MCP_HOST', 'greenmind-agent.onrender.com')
+                    mcp_port = int(os.getenv('MCP_PORT', '10000'))
+                    use_ssl = mcp_host not in ['localhost', '127.0.0.1']
+                    
+                    print(f"Creating client for {mcp_host}:{mcp_port}")
+                    client = MCPClient(host=mcp_host, port=mcp_port, use_ssl=use_ssl)
+                    
+                    print("Attempting connect...")
+                    connected = await asyncio.wait_for(client.connect(), timeout=10.0)
+                    
+                    if not connected:
+                        print("Connect returned False")
+                        return "Failed to connect"
+                    
+                    print("Connected, sending ping...")
                     ping_result = await asyncio.wait_for(client.ping(), timeout=10.0)
+                    
+                    print(f"Ping result: {ping_result}")
+                    await client.disconnect()
+                    
                     if ping_result:
                         return "Connected"
                     else:
                         return "Ping failed"
+                        
                 except asyncio.TimeoutError:
+                    print("Operation timed out")
                     return "Connection timed out"
                 except Exception as e:
+                    print(f"Error: {str(e)}")
                     return f"Error: {str(e)}"
-            else:
-                return "Not connected"
-        
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        status = loop.run_until_complete(test_connection())
-        loop.close()
-        st.info(status)
+            
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                status = loop.run_until_complete(asyncio.wait_for(test_connection(), timeout=30.0))
+                loop.close()
+                st.info(status)
+            except asyncio.TimeoutError:
+                st.error("Test timed out after 30 seconds")
+            except Exception as e:
+                st.error(f"Test failed: {str(e)}")
     
     if st.session_state.mcp_connected:
         st.markdown('<div class="status-box connected">MCP Server Connected</div>', unsafe_allow_html=True)
