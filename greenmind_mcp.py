@@ -3,6 +3,7 @@ import asyncio
 import os
 import sys
 import socket
+import subprocess
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -10,6 +11,24 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.mcp.servers.greenmind_server import GreenMindMCPServer
 from src.mcp.adapters.tool_adapters import create_adapters
+
+def kill_process_on_port(port):
+    """Kill any process using the specified port"""
+    try:
+        print(f"Checking for process using port {port}...")
+        # Find and kill process using the port
+        result = subprocess.run(
+            f"lsof -ti:{port} | xargs kill -9",
+            shell=True,
+            capture_output=True,
+            text=True
+        )
+        if result.stdout:
+            print(f"Killed process: {result.stdout}")
+        else:
+            print(f"No process found on port {port}")
+    except Exception as e:
+        print(f"Error killing process: {e}")
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -23,47 +42,59 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
 def run_health_server(port):
     try:
         server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
-        print(f"✅ Health check server running on 0.0.0.0:{port}")
+        print(f"Health check server running on port {port}")
         server.serve_forever()
     except Exception as e:
-        print(f"❌ Health check server failed: {e}")
+        print(f"Health check server error: {e}")
 
 async def main():
-    # Get port from environment variable (Render sets this) or default to 8765
-    port = int(os.environ.get('PORT', 8765))
-    # MUST bind to 0.0.0.0 for Render - this is non-negotiable
+    # Get port from environment variable (Render sets this) or default to 10000
+    port = int(os.environ.get('PORT', 10000))
     host = "0.0.0.0"
     
-    print(f"🔧 Configuring servers to bind to {host}:{port}")
+    # Kill any existing process on the port
+    kill_process_on_port(port)
     
-    # Test if we can bind to this address/port
+    # Small delay to ensure port is released
+    await asyncio.sleep(2)
+    
+    print(f"Starting services on {host}:{port}")
+    
+    # Test if port is available
     test_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     test_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
         test_sock.bind((host, port))
-        print(f"✅ Successfully bound test socket to {host}:{port}")
+        print(f"Port {port} is available")
         test_sock.close()
     except Exception as e:
-        print(f"❌ Cannot bind to {host}:{port}: {e}")
-        return
+        print(f"Port {port} is still in use: {e}")
+        # Try one more kill
+        kill_process_on_port(port)
+        await asyncio.sleep(2)
+        try:
+            test_sock.bind((host, port))
+            print(f"Port {port} now available after second kill")
+            test_sock.close()
+        except Exception as e2:
+            print(f"Port {port} still unavailable: {e2}")
+            return
     
-    # Start health check server (explicitly on 0.0.0.0)
+    # Start health check server
     health_thread = threading.Thread(target=run_health_server, args=(port,), daemon=True)
     health_thread.start()
-    await asyncio.sleep(1)  # Give it a moment to start
     
     print("=" * 70)
     print("GREENMIND MCP SERVER - RUNNING")
     print("=" * 70)
-    print(f"Main MCP server will bind to {host}:{port}")
     
     # Step 1: Create tool adapters
     print("\n1. Creating tool adapters...")
     adapters = create_adapters()
     print(f"   Created {len(adapters)} adapters")
     
-    # Step 2: Create MCP server with EXPLICIT host and port
-    print(f"\n2. Initializing MCP server with host='{host}', port={port}...")
+    # Step 2: Create MCP server
+    print("\n2. Initializing MCP server...")
     server = GreenMindMCPServer(host=host, port=port)
     
     # Step 3: Register all tools
