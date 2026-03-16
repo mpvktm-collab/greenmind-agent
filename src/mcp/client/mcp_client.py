@@ -69,7 +69,8 @@ class MCPClient:
         
         # Send message (4-byte length prefix + data)
         message_json = message.to_json()
-        message_bytes = message_json.encode()
+        print(f"Sending message: {message_json}")  # Debug line
+        message_bytes = message_json.encode('utf-8')
         
         self.writer.write(len(message_bytes).to_bytes(4, byteorder='big'))
         self.writer.write(message_bytes)
@@ -84,13 +85,18 @@ class MCPClient:
         data = await self.reader.read(data_length)
         
         # Parse response
-        response = json.loads(data.decode())
+        response = json.loads(data.decode('utf-8'))
+        print(f"Received response: {response}")  # Debug line
         return response
     
     async def ping(self) -> bool:
         """Send ping to server"""
         try:
-            response = await self.send_message(PingMessage())
+            print("Sending ping message")  # Debug line
+            msg = PingMessage()
+            print(f"Ping message JSON: {msg.to_json()}")  # Debug line
+            response = await self.send_message(msg)
+            print(f"Ping response: {response}")  # Debug line
             return response.get("type") == "pong"
         except Exception as e:
             print(f"Ping failed: {str(e)}")
@@ -98,6 +104,7 @@ class MCPClient:
     
     async def list_tools(self) -> List[Dict[str, Any]]:
         """Get list of available tools"""
+        print("Listing tools")  # Debug line
         response = await self.send_message(ListToolsMessage())
         if response.get("type") == "tools_list":
             return response.get("tools", [])
@@ -107,6 +114,7 @@ class MCPClient:
     
     async def call_tool(self, tool_name: str, **params) -> Any:
         """Call a specific tool"""
+        print(f"Calling tool: {tool_name} with params: {params}")  # Debug line
         response = await self.send_message(CallToolMessage(tool_name, params))
         if response.get("type") == "tool_result":
             return response.get("result")

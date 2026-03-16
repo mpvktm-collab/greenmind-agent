@@ -107,8 +107,9 @@ class GreenMindMCPServer:
     async def handle_message(self, data: str) -> str:
         """Handle incoming message"""
         try:
-            # Parse message
+            print(f"RAW RECEIVED: {repr(data)}")  # Important debug line using repr to show special chars
             msg_dict = json.loads(data)
+            print(f"PARSED: {msg_dict}")  # Important debug line
             message = create_message_from_dict(msg_dict)
             
             logger.debug(f"Received message: {message.type.value} (ID: {message.id})")
@@ -131,11 +132,16 @@ class GreenMindMCPServer:
             
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON: {str(e)}")
+            print(f"JSON DECODE ERROR: {str(e)}")  # Important debug line
+            print(f"RAW DATA THAT FAILED: {repr(data)}")  # Show the raw data that failed
             error_msg = ErrorMessage("unknown", f"Invalid JSON: {str(e)}")
             return error_msg.to_json()
             
         except Exception as e:
             logger.error(f"Error handling message: {str(e)}")
+            print(f"ERROR HANDLING MESSAGE: {str(e)}")  # Important debug line
+            import traceback
+            traceback.print_exc()  # Print full stack trace
             error_msg = ErrorMessage("unknown", f"Server error: {str(e)}")
             return error_msg.to_json()
     
@@ -143,6 +149,7 @@ class GreenMindMCPServer:
         """Handle client connection"""
         client_address = writer.get_extra_info('peername')
         logger.info(f"Client connected: {client_address}")
+        print(f"CLIENT CONNECTED: {client_address}")  # Debug line
         
         try:
             while self.is_running:
@@ -152,35 +159,42 @@ class GreenMindMCPServer:
                     break
                 
                 data_length = int.from_bytes(data_length_bytes, byteorder='big')
+                print(f"Received message length: {data_length}")  # Debug line
                 data = await reader.read(data_length)
                 
                 if not data:
                     break
                 
                 # Process message
-                response = await self.handle_message(data.decode())
+                response = await self.handle_message(data.decode('utf-8'))
                 
                 # Send response (4-byte length prefix + data)
-                response_bytes = response.encode()
+                response_bytes = response.encode('utf-8')
                 writer.write(len(response_bytes).to_bytes(4, byteorder='big'))
                 writer.write(response_bytes)
                 await writer.drain()
                 
         except asyncio.CancelledError:
             logger.info(f"Client handler cancelled for {client_address}")
+            print(f"CLIENT HANDLER CANCELLED: {client_address}")  # Debug line
             
         except Exception as e:
             logger.error(f"Error handling client {client_address}: {str(e)}")
+            print(f"CLIENT HANDLER ERROR: {str(e)}")  # Debug line
+            import traceback
+            traceback.print_exc()
             
         finally:
             writer.close()
             await writer.wait_closed()
             logger.info(f"Client disconnected: {client_address}")
+            print(f"CLIENT DISCONNECTED: {client_address}")  # Debug line
     
     async def start(self):
         """Start the MCP server"""
         self.is_running = True
         logger.info(f"Starting GreenMind MCP Server on {self.host}:{self.port}")
+        print(f"STARTING SERVER ON {self.host}:{self.port}")  # Debug line
         
         # Create server
         self.server = await asyncio.start_server(
@@ -190,6 +204,7 @@ class GreenMindMCPServer:
         )
         
         logger.info(f"GreenMind MCP Server started on {self.host}:{self.port}")
+        print(f"SERVER STARTED ON {self.host}:{self.port}")  # Debug line
         return {
             "status": "running",
             "server_id": self.server_id,
@@ -204,6 +219,7 @@ class GreenMindMCPServer:
             self.server.close()
             await self.server.wait_closed()
         logger.info("GreenMind MCP Server stopped")
+        print("SERVER STOPPED")  # Debug line
         return {"status": "stopped"}
     
     async def run(self):
@@ -214,9 +230,11 @@ class GreenMindMCPServer:
                 await self.server.serve_forever()
         except KeyboardInterrupt:
             logger.info("Server stopped by keyboard interrupt")
+            print("SERVER STOPPED BY KEYBOARD INTERRUPT")  # Debug line
             await self.stop()
         except Exception as e:
             logger.error(f"Server error: {str(e)}")
+            print(f"SERVER ERROR: {str(e)}")  # Debug line
             await self.stop()
 
 # For running directly
