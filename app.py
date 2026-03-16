@@ -1,4 +1,4 @@
-# app.py - Complete version with SSL support for Render MCP connection
+# app.py - Complete version with MCP session state management
 import streamlit as st
 import sys
 import os
@@ -13,18 +13,16 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from src.mcp.client.mcp_client import MCPClient
 from config import Config
 
+# Initialize MCP client in session state (only once)
+if "mcp_client" not in st.session_state:
+    st.session_state.mcp_client = None
+    st.session_state.mcp_connected = False
+    st.session_state.connection_attempted = False
+
 # Print debug info
 print("Starting GreenMind app...")
 print(f"MCP_HOST from env: {os.getenv('MCP_HOST')}")
 print(f"MCP_PORT from env: {os.getenv('MCP_PORT')}")
-
-# Test DNS resolution
-try:
-    print("Resolving greenmind-mcp.onrender.com...")
-    ip_addresses = socket.gethostbyname_ex('greenmind-mcp.onrender.com')
-    print(f"IP addresses: {ip_addresses}")
-except Exception as e:
-    print(f"DNS resolution failed: {str(e)}")
 
 # Page configuration
 st.set_page_config(
@@ -193,10 +191,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state
-if 'mcp_connected' not in st.session_state:
-    st.session_state.mcp_connected = False
-
+# Initialize session state for messages
 if 'messages' not in st.session_state:
     # Welcome message with stylish environmental quote
     welcome_quotes = [
@@ -243,55 +238,61 @@ MAJOR_CITIES = [
     'oslo', 'helsinki', 'dublin', 'edinburgh', 'glasgow', 'manchester', 'birmingham'
 ]
 
-# Function to call MCP tool with detailed debugging and SSL support
+# Function to get or create MCP client
+async def get_mcp_client():
+    """Get the cached MCP client from session state or create a new one"""
+    if st.session_state.mcp_client is None and not st.session_state.connection_attempted:
+        st.session_state.connection_attempted = True
+        mcp_host = os.getenv('MCP_HOST', 'greenmind-agent.onrender.com')
+        mcp_port = int(os.getenv('MCP_PORT', '10000'))
+        use_ssl = mcp_host not in ['localhost', '127.0.0.1']
+        
+        print(f"Creating new MCP client for {mcp_host}:{mcp_port}")
+        try:
+            client = MCPClient(host=mcp_host, port=mcp_port, use_ssl=use_ssl)
+            
+            # Attempt to connect
+            connected = await client.connect()
+            if connected:
+                print("MCP client connected successfully")
+                st.session_state.mcp_client = client
+                st.session_state.mcp_connected = True
+            else:
+                print("Failed to connect MCP client")
+                st.session_state.mcp_connected = False
+        except Exception as e:
+            print(f"Error creating MCP client: {str(e)}")
+            st.session_state.mcp_connected = False
+    
+    return st.session_state.mcp_client
+
+# Function to call MCP tool with timeout
 async def call_mcp_tool(tool_name: str, input_text: str):
-    """Call a tool via MCP client with detailed debugging and SSL support"""
-    mcp_host = os.getenv('MCP_HOST', 'localhost')
-    mcp_port = int(os.getenv('MCP_PORT', '8765'))
+    """Call a tool via MCP client using cached connection"""
+    client = await get_mcp_client()
     
-    # Determine if we need SSL (use for non-localhost connections)
-    use_ssl = mcp_host not in ['localhost', '127.0.0.1']
-    
-    print(f"Attempting to connect to MCP server at {mcp_host}:{mcp_port} (SSL: {use_ssl})")
+    if client is None or not st.session_state.mcp_connected:
+        return "Error: Could not connect to MCP Server. Make sure it's running."
     
     try:
-        print("Creating MCPClient instance...")
-        client = MCPClient(host=mcp_host, port=mcp_port, use_ssl=use_ssl)
-        
-        print("Attempting to connect...")
-        connected = await client.connect()
-        
-        if not connected:
-            print("Failed to connect - no connection established")
-            return "Error: Could not connect to MCP Server. Make sure it's running."
-        
-        print("Connected successfully!")
-        
-        print("Sending ping...")
-        ping_result = await client.ping()
-        print(f"Ping result: {ping_result}")
-        
-        if not ping_result:
-            print("Ping failed")
-            await client.disconnect()
-            return "Error: MCP Server ping failed."
-        
-        print(f"Ping successful, calling tool {tool_name}")
-        result = await client.call_tool(tool_name, input=input_text)
-        print("Tool call successful")
-        
-        await client.disconnect()
+        print(f"Calling tool {tool_name} with cached client")
+        # Add timeout to prevent hanging
+        result = await asyncio.wait_for(
+            client.call_tool(tool_name, input=input_text),
+            timeout=30.0
+        )
         return result
     except asyncio.TimeoutError:
-        print("Connection timeout - server not responding")
-        return "Error: Connection timeout. MCP Server not responding."
-    except ConnectionRefusedError:
-        print("Connection refused - server may not be running or port is wrong")
-        return "Error: Connection refused. Check if MCP Server is running and port is correct."
+        print("Tool call timed out")
+        # Reset client on timeout
+        st.session_state.mcp_client = None
+        st.session_state.mcp_connected = False
+        return "Error: Request timed out after 30 seconds"
     except Exception as e:
-        print(f"Unexpected error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        print(f"Error calling tool: {str(e)}")
+        # Reset client on error
+        st.session_state.mcp_client = None
+        st.session_state.mcp_connected = False
         return f"Error calling tool: {str(e)}"
 
 # Clean response function
@@ -505,20 +506,21 @@ with st.sidebar:
     # Test connection button
     if st.button("Test MCP Connection"):
         async def test_connection():
-            host = os.getenv('MCP_HOST', 'localhost')
-            port = int(os.getenv('MCP_PORT', '8765'))
-            use_ssl = host not in ['localhost', '127.0.0.1']
-            try:
-                async with MCPClient(host=host, port=port, use_ssl=use_ssl) as client:
-                    if await client.ping():
-                        st.session_state.mcp_connected = True
+            client = await get_mcp_client()
+            if client and st.session_state.mcp_connected:
+                try:
+                    # Test ping with timeout
+                    ping_result = await asyncio.wait_for(client.ping(), timeout=10.0)
+                    if ping_result:
                         return "Connected"
                     else:
-                        st.session_state.mcp_connected = False
-                        return "Disconnected"
-            except Exception as e:
-                st.session_state.mcp_connected = False
-                return f"Error: {str(e)}"
+                        return "Ping failed"
+                except asyncio.TimeoutError:
+                    return "Connection timed out"
+                except Exception as e:
+                    return f"Error: {str(e)}"
+            else:
+                return "Not connected"
         
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
