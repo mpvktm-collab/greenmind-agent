@@ -2,6 +2,7 @@
 import asyncio
 import json
 import logging
+import ssl
 from typing import Dict, Any, Optional, List
 
 from ..protocol.messages import (
@@ -14,24 +15,39 @@ logger = logging.getLogger(__name__)
 class MCPClient:
     """MCP Client for connecting to GreenMind MCP Server"""
     
-    def __init__(self, host: str = "localhost", port: int = 8765):
+    def __init__(self, host: str = "localhost", port: int = 8765, use_ssl: bool = False):
         self.host = host
         self.port = port
+        self.use_ssl = use_ssl
         self.reader = None
         self.writer = None
         self.connected = False
     
     async def connect(self):
-        """Connect to MCP server"""
+        """Connect to MCP server with optional SSL support"""
         try:
-            self.reader, self.writer = await asyncio.open_connection(
-                self.host, self.port
-            )
+            print(f"Connecting to {self.host}:{self.port} (SSL: {self.use_ssl})")
+            
+            if self.use_ssl:
+                # Create SSL context for secure connection
+                ssl_context = ssl.create_default_context()
+                # For self-signed certificates or testing, you might need:
+                # ssl_context.check_hostname = False
+                # ssl_context.verify_mode = ssl.CERT_NONE
+                
+                self.reader, self.writer = await asyncio.open_connection(
+                    self.host, self.port, ssl=ssl_context
+                )
+            else:
+                self.reader, self.writer = await asyncio.open_connection(
+                    self.host, self.port
+                )
+            
             self.connected = True
-            logger.info(f"Connected to MCP server at {self.host}:{self.port}")
+            print(f"Successfully connected to {self.host}:{self.port}")
             return True
         except Exception as e:
-            logger.error(f"Failed to connect to MCP server: {str(e)}")
+            print(f"Connection failed: {str(e)}")
             self.connected = False
             return False
     
@@ -44,7 +60,7 @@ class MCPClient:
             except:
                 pass
         self.connected = False
-        logger.info("Disconnected from MCP server")
+        print("Disconnected from MCP server")
     
     async def send_message(self, message: MCPMessage) -> Dict[str, Any]:
         """Send a message to the server and wait for response"""
@@ -77,7 +93,7 @@ class MCPClient:
             response = await self.send_message(PingMessage())
             return response.get("type") == "pong"
         except Exception as e:
-            logger.error(f"Ping failed: {str(e)}")
+            print(f"Ping failed: {str(e)}")
             return False
     
     async def list_tools(self) -> List[Dict[str, Any]]:

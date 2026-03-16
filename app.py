@@ -1,9 +1,10 @@
-# app.py - Complete version with debug logging
+# app.py - Complete version with SSL support for Render MCP connection
 import streamlit as st
 import sys
 import os
 import asyncio
 import re
+import socket
 from datetime import datetime
 
 # Add the project root to Python path
@@ -16,6 +17,14 @@ from config import Config
 print("Starting GreenMind app...")
 print(f"MCP_HOST from env: {os.getenv('MCP_HOST')}")
 print(f"MCP_PORT from env: {os.getenv('MCP_PORT')}")
+
+# Test DNS resolution
+try:
+    print("Resolving greenmind-mcp.onrender.com...")
+    ip_addresses = socket.gethostbyname_ex('greenmind-mcp.onrender.com')
+    print(f"IP addresses: {ip_addresses}")
+except Exception as e:
+    print(f"DNS resolution failed: {str(e)}")
 
 # Page configuration
 st.set_page_config(
@@ -234,17 +243,20 @@ MAJOR_CITIES = [
     'oslo', 'helsinki', 'dublin', 'edinburgh', 'glasgow', 'manchester', 'birmingham'
 ]
 
-# Function to call MCP tool with detailed debugging
+# Function to call MCP tool with detailed debugging and SSL support
 async def call_mcp_tool(tool_name: str, input_text: str):
-    """Call a tool via MCP client with detailed debugging"""
+    """Call a tool via MCP client with detailed debugging and SSL support"""
     mcp_host = os.getenv('MCP_HOST', 'localhost')
     mcp_port = int(os.getenv('MCP_PORT', '8765'))
     
-    print(f"Attempting to connect to MCP server at {mcp_host}:{mcp_port}")
+    # Determine if we need SSL (use for non-localhost connections)
+    use_ssl = mcp_host not in ['localhost', '127.0.0.1']
+    
+    print(f"Attempting to connect to MCP server at {mcp_host}:{mcp_port} (SSL: {use_ssl})")
     
     try:
         print("Creating MCPClient instance...")
-        client = MCPClient(host=mcp_host, port=mcp_port)
+        client = MCPClient(host=mcp_host, port=mcp_port, use_ssl=use_ssl)
         
         print("Attempting to connect...")
         connected = await client.connect()
@@ -495,8 +507,9 @@ with st.sidebar:
         async def test_connection():
             host = os.getenv('MCP_HOST', 'localhost')
             port = int(os.getenv('MCP_PORT', '8765'))
+            use_ssl = host not in ['localhost', '127.0.0.1']
             try:
-                async with MCPClient(host=host, port=port) as client:
+                async with MCPClient(host=host, port=port, use_ssl=use_ssl) as client:
                     if await client.ping():
                         st.session_state.mcp_connected = True
                         return "Connected"
