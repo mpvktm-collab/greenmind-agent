@@ -33,5 +33,7 @@ plotly==5.18.0
 
 # MCP
 mcp==1.26.0
+fastapi
+uvicorn
 
 #pillow>=11.0.0  # for Python 3.14 compatibility
