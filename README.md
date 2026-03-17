@@ -33,6 +33,7 @@ An AI-powered environmental advisor that helps users understand and protect our 
    cd greenmind
 
 Project Structure:
+
 greenmind/
 ├── src/
 │   ├── agent.py              # Main agent
@@ -56,6 +57,7 @@ greenmind/
 │       └── effects/           # Effects PDF documents
 ├── app.py                      # Streamlit UI
 ├── greenmind_mcp.py             # MCP server launcher
+├── build_vector_stores.py       # Vector store builder utility
 ├── config.py                    # Configuration
 ├── url_policies.txt             # Policy URLs for scraping
 ├── url_effects.txt              # Effects URLs for scraping
