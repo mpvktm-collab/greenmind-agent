@@ -37,3 +37,5 @@ fastapi
 uvicorn
 
 #pillow>=11.0.0  # for Python 3.14 compatibility
+
+pydantic
