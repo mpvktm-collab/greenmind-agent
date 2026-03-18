@@ -1,5 +1,6 @@
-# app.py - Complete version with working MCP connection
+# app.py - Complete version with improved routing
 
+# app.py - Complete version with improved routing for city carbon footprint
 import streamlit as st
 import sys
 import os
@@ -19,11 +20,28 @@ if "mcp_client" not in st.session_state:
     st.session_state.mcp_connected = False
     st.session_state.connection_attempted = False
 
-# Page configuration
+# Page configuration with sidebar expanded by default
 st.set_page_config(
     page_title="GreenMind - Environmental Sustainability Advisor",
     page_icon="🌍",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"  # This keeps sidebar open by default
+)
+
+# Force sidebar to stay expanded with CSS
+st.markdown(
+    """
+    <style>
+        section[data-testid="stSidebar"][aria-expanded="true"] {
+            display: block;
+        }
+        section[data-testid="stSidebar"][aria-expanded="false"] {
+            display: block;
+            margin-left: 0;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 # Custom CSS with stylish quote formatting
@@ -342,11 +360,27 @@ async def handle_comparison(query):
     cities = extract_cities(query)
     
     if not cities:
-        cities = ['delhi', 'mumbai', 'london', 'new york']
+        if 'carbon' in query_lower and 'air quality' in query_lower:
+            cities = ['delhi', 'mumbai', 'london', 'new york']
+        elif 'carbon' in query_lower:
+            cities = ['delhi', 'london', 'new york', 'tokyo']
+        elif 'air quality' in query_lower or 'pollution' in query_lower:
+            cities = ['delhi', 'beijing', 'mumbai', 'los angeles']
+        else:
+            cities = ['delhi', 'mumbai', 'london', 'new york']
     
     results = {}
+    
+    # Determine which tools to call based on query
     call_carbon = 'carbon' in query_lower or 'footprint' in query_lower
     call_pollution = 'pollution' in query_lower or 'air quality' in query_lower or 'aqi' in query_lower
+    
+    # For city comparisons with "and", call both if relevant
+    if 'and' in query_lower or ',' in query_lower:
+        if 'carbon' in query_lower:
+            call_carbon = True
+        if 'pollution' in query_lower or 'air quality' in query_lower:
+            call_pollution = True
     
     if not call_carbon and not call_pollution:
         call_carbon = True
@@ -410,7 +444,7 @@ def format_comparison_results(results, cities, query, call_carbon, call_pollutio
 async def process_with_mcp_async(user_query):
     query_lower = user_query.lower()
     
-    # Check for comparison query
+    # Check for comparison query first
     if is_comparison_query(user_query) or len(extract_cities(user_query)) >= 2:
         print("Detected comparison query")
         results, cities, call_carbon, call_pollution = await handle_comparison(user_query)
@@ -418,12 +452,29 @@ async def process_with_mcp_async(user_query):
             formatted = format_comparison_results(results, cities, user_query, call_carbon, call_pollution)
             return formatted, "Comparison_Tool"
     
-    # Simple keyword routing
-    if any(word in query_lower for word in ['cancer', 'health', 'disease']):
+    # Improved carbon footprint detection - check for city names
+    carbon_keywords = ['carbon', 'footprint', 'co2', 'emission']
+    city_names = ['delhi', 'mumbai', 'new york', 'london', 'paris', 'tokyo', 'beijing', 
+                  'chicago', 'los angeles', 'san francisco', 'berlin', 'sydney']
+    
+    # Check if query has carbon keywords AND city names
+    has_carbon = any(word in query_lower for word in carbon_keywords)
+    has_city = any(city in query_lower for city in city_names)
+    
+    if has_carbon and has_city:
+        tool = "Carbon_Footprint_Calculator"
+        print(f"Routing to {tool} for city carbon footprint")
+        result = await call_mcp_tool(tool, user_query)
+        cleaned_result = clean_response(result)
+        return cleaned_result, tool
+    
+    # Health-related keywords
+    if any(word in query_lower for word in ['cancer', 'health', 'disease', 'respiratory']):
         tool = "Environmental_Effects_RAG"
     elif any(word in query_lower for word in ['air quality', 'aqi', 'pollution']):
         tool = "Pollution_Health_Index"
     elif any(word in query_lower for word in ['carbon', 'footprint', 'co2']):
+        # Only reach here if no city was detected
         tool = "Carbon_Footprint_Calculator"
     elif any(word in query_lower for word in ['policy', 'act', 'regulation', 'law']):
         tool = "Environmental_Policies_RAG"
@@ -537,7 +588,7 @@ if st.session_state.messages and len(st.session_state.messages) > 0:
                 <div class="quote-author">— {st.session_state.quote_data["author"]}</div>
             </div>
             '''
-            # CRITICAL: This parameter makes the HTML render properly
+            # Critical: This parameter makes the HTML render properly
             st.markdown(quote_html, unsafe_allow_html=True)
         
         st.markdown(st.session_state.messages[0]["content"])
