@@ -1,8 +1,9 @@
+
 services:
   - type: web
     name: greenmind-mcp-server
     runtime: python
-    region: oregon
+    plan: free  # ← Add this line for free plan
     buildCommand: pip install -r requirements-mcp.txt
     startCommand: uvicorn greenmind_mcp:app --host 0.0.0.0 --port $PORT
     envVars:
