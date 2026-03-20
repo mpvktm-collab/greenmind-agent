@@ -1,6 +1,4 @@
-# app.py - Complete version with improved routing
-
-# app.py - Complete version with improved routing for city carbon footprint
+# app.py - Complete version with visually appealing formatting
 import streamlit as st
 import sys
 import os
@@ -25,7 +23,7 @@ st.set_page_config(
     page_title="GreenMind - Environmental Sustainability Advisor",
     page_icon="🌍",
     layout="wide",
-    initial_sidebar_state="expanded"  # This keeps sidebar open by default
+    initial_sidebar_state="expanded"
 )
 
 # Force sidebar to stay expanded with CSS
@@ -44,7 +42,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Custom CSS with stylish quote formatting
+# Custom CSS with stylish quote formatting and comparison styling
 st.markdown("""
 <style>
     .main-header {
@@ -117,6 +115,92 @@ st.markdown("""
         margin-top: 0.5rem;
         font-family: 'Arial', sans-serif;
         letter-spacing: 1px;
+    }
+    
+    /* Comparison Card Styles */
+    .comparison-container {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+    }
+    .city-card {
+        flex: 1;
+        min-width: 250px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-top: 5px solid;
+        transition: transform 0.3s ease;
+    }
+    .city-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .city-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+    .aqi-value {
+        font-size: 2rem;
+        font-weight: bold;
+        text-align: center;
+        margin: 15px 0;
+    }
+    .pm-value {
+        font-size: 0.9rem;
+        margin: 8px 0;
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 10px;
+        background: #f5f5f5;
+        border-radius: 8px;
+    }
+    .aqi-bar {
+        height: 8px;
+        border-radius: 4px;
+        margin: 10px 0;
+        overflow: hidden;
+    }
+    .aqi-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+    .good { color: #00e676; border-top-color: #00e676; }
+    .moderate { color: #ffeb3b; border-top-color: #ffeb3b; }
+    .unhealthy-sensitive { color: #ff9800; border-top-color: #ff9800; }
+    .unhealthy { color: #f44336; border-top-color: #f44336; }
+    .very-unhealthy { color: #9c27b0; border-top-color: #9c27b0; }
+    .hazardous { color: #000000; border-top-color: #000000; }
+    
+    .aqi-good { background: #00e676; }
+    .aqi-moderate { background: #ffeb3b; }
+    .aqi-unhealthy-sensitive { background: #ff9800; }
+    .aqi-unhealthy { background: #f44336; }
+    .aqi-very-unhealthy { background: #9c27b0; }
+    .aqi-hazardous { background: #000000; }
+    
+    .comparison-header {
+        font-size: 1.8rem;
+        font-weight: bold;
+        text-align: center;
+        margin: 20px 0;
+        color: #2E7D32;
+    }
+    .note-box {
+        background: #fff3e0;
+        border-left: 4px solid #ff9800;
+        padding: 10px 15px;
+        margin: 20px 0;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        color: #666;
     }
     
     /* Chat message styling */
@@ -251,12 +335,141 @@ MAJOR_CITIES = [
     'oslo', 'helsinki', 'dublin', 'edinburgh', 'glasgow', 'manchester', 'birmingham'
 ]
 
+# Function to get AQI color class
+def get_aqi_class(aqi):
+    if aqi <= 50:
+        return "good", "aqi-good"
+    elif aqi <= 100:
+        return "moderate", "aqi-moderate"
+    elif aqi <= 150:
+        return "unhealthy-sensitive", "aqi-unhealthy-sensitive"
+    elif aqi <= 200:
+        return "unhealthy", "aqi-unhealthy"
+    elif aqi <= 300:
+        return "very-unhealthy", "aqi-very-unhealthy"
+    else:
+        return "hazardous", "aqi-hazardous"
+
+# Function to get AQI text
+def get_aqi_text(aqi):
+    if aqi <= 50:
+        return "Good"
+    elif aqi <= 100:
+        return "Moderate"
+    elif aqi <= 150:
+        return "Unhealthy for Sensitive Groups"
+    elif aqi <= 200:
+        return "Unhealthy"
+    elif aqi <= 300:
+        return "Very Unhealthy"
+    else:
+        return "Hazardous"
+
+# Function to format comparison results with HTML
+def format_comparison_html(results, cities, call_pollution):
+    if not call_pollution:
+        return None
+    
+    html = '<div class="comparison-header">🌍 Environmental Comparison</div>'
+    html += '<div class="comparison-container">'
+    
+    for city in cities[:3]:
+        aqi_key = f"aqi_{city}"
+        if aqi_key in results:
+            aqi_text = results[aqi_key]
+            
+            # Extract values
+            aqi_match = re.search(r'AQI\):\s*(\d+)', aqi_text)
+            pm25_match = re.search(r'PM2\.5:\s*(\d+)', aqi_text)
+            pm10_match = re.search(r'PM10:\s*(\d+)', aqi_text)
+            
+            if aqi_match:
+                aqi_value = int(aqi_match.group(1))
+                aqi_class, aqi_color_class = get_aqi_class(aqi_value)
+                aqi_category = get_aqi_text(aqi_value)
+                fill_percent = min(100, (aqi_value / 300) * 100)
+                
+                html += f'''
+                <div class="city-card {aqi_class}">
+                    <div class="city-title">📍 {city.upper()}</div>
+                    <div class="aqi-value">
+                        <span class="{aqi_class}">{aqi_value}</span>
+                    </div>
+                    <div style="text-align: center; font-size: 0.9rem; margin: 5px 0;">{aqi_category}</div>
+                    <div class="aqi-bar">
+                        <div class="aqi-fill {aqi_color_class}" style="width: {fill_percent}%;"></div>
+                    </div>
+                '''
+                
+                if pm25_match:
+                    pm25 = pm25_match.group(1)
+                    html += f'<div class="pm-value"><span>PM2.5</span><span>{pm25} μg/m³</span></div>'
+                
+                if pm10_match:
+                    pm10 = pm10_match.group(1)
+                    html += f'<div class="pm-value"><span>PM10</span><span>{pm10} μg/m³</span></div>'
+                
+                html += '</div>'
+    
+    html += '</div>'
+    html += '<div class="note-box">Note: These are simulated values based on location characteristics. For production, connect to real APIs like OpenAQ or WAQI.</div>'
+    
+    return html
+
+# Function to format carbon footprint results
+def format_carbon_html(results, cities, call_carbon):
+    if not call_carbon:
+        return None
+    
+    html = '<div class="comparison-header">🌱 Carbon Footprint Comparison</div>'
+    html += '<div class="comparison-container">'
+    
+    for city in cities[:3]:
+        carbon_key = f"carbon_{city}"
+        if carbon_key in results:
+            carbon_text = results[carbon_key]
+            carbon_match = re.search(r'(\d+\.?\d*)\s*tons', carbon_text)
+            
+            if carbon_match:
+                carbon_value = float(carbon_match.group(1))
+                if carbon_value <= 2.0:
+                    footprint_class = "good"
+                    footprint_label = "Low Impact"
+                elif carbon_value <= 5.0:
+                    footprint_class = "moderate"
+                    footprint_label = "Moderate Impact"
+                else:
+                    footprint_class = "unhealthy"
+                    footprint_label = "High Impact"
+                
+                fill_percent = min(100, (carbon_value / 10) * 100)
+                
+                html += f'''
+                <div class="city-card {footprint_class}">
+                    <div class="city-title">📍 {city.upper()}</div>
+                    <div class="aqi-value">
+                        <span class="{footprint_class}">{carbon_value}</span>
+                        <span style="font-size: 1rem;">tons CO₂/year</span>
+                    </div>
+                    <div style="text-align: center; font-size: 0.9rem; margin: 5px 0;">{footprint_label}</div>
+                    <div class="aqi-bar">
+                        <div class="aqi-fill {footprint_class}" style="width: {fill_percent}%;"></div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.85rem; text-align: center;">
+                        ▰▰▰▰▰▰▰▰▰▰ {carbon_value}/10 tons
+                    </div>
+                </div>
+                '''
+    
+    html += '</div>'
+    return html
+
 # Function to get or create MCP client
 async def get_mcp_client():
     """Get the cached MCP client from session state or create a new one"""
     if st.session_state.mcp_client is None and not st.session_state.connection_attempted:
         st.session_state.connection_attempted = True
-        mcp_host = os.getenv('MCP_HOST', 'greenmind-agent.onrender.com')
+        mcp_host = os.getenv('MCP_HOST', 'greenmind-mcp-server.onrender.com')
         
         print(f"Creating new MCP client for host: {mcp_host}")
         try:
@@ -396,49 +609,26 @@ async def handle_comparison(query):
     
     return results, cities, call_carbon, call_pollution
 
-# Function to format comparison results
-def format_comparison_results(results, cities, query, call_carbon, call_pollution):
-    output = []
-    output.append("=" * 70)
-    output.append("COMPARISON RESULTS")
-    output.append("=" * 70)
-    output.append("")
+# Function to format comparison results with HTML
+def format_comparison_results(results, cities, call_carbon, call_pollution):
+    html = ""
     
-    for i, city in enumerate(cities[:3]):
-        if i > 0:
-            output.append("")
-            output.append("-" * 40)
-            output.append("")
-        
-        output.append(f"CITY: {city.upper()}")
-        output.append("")
-        
-        if call_carbon and f"carbon_{city}" in results:
-            carbon_text = results[f"carbon_{city}"]
-            carbon_match = re.search(r'(\d+\.?\d*)\s*tons', carbon_text)
-            if carbon_match:
-                carbon_value = carbon_match.group(1)
-                output.append(f"  CARBON FOOTPRINT: {carbon_value} tons CO2 per year")
-        
-        if call_pollution and f"aqi_{city}" in results:
-            aqi_text = results[f"aqi_{city}"]
-            aqi_match = re.search(r'AQI\):\s*(\d+)', aqi_text)
-            if aqi_match:
-                aqi_value = aqi_match.group(1)
-                output.append(f"  AIR QUALITY INDEX: {aqi_value}")
-                
-                pm25_match = re.search(r'PM2\.5:\s*(\d+)', aqi_text)
-                pm10_match = re.search(r'PM10:\s*(\d+)', aqi_text)
-                
-                if pm25_match:
-                    output.append(f"  PM2.5: {pm25_match.group(1)} μg/m³")
-                if pm10_match:
-                    output.append(f"  PM10: {pm10_match.group(1)} μg/m³")
+    if call_pollution:
+        pollution_html = format_comparison_html(results, cities, call_pollution)
+        if pollution_html:
+            html += pollution_html
     
-    output.append("")
-    output.append("=" * 70)
-    output.append("Note: These are simulated values for demonstration.")
-    return "\n".join(output)
+    if call_carbon:
+        carbon_html = format_carbon_html(results, cities, call_carbon)
+        if carbon_html:
+            if html:
+                html += "<br>"
+            html += carbon_html
+    
+    if not html:
+        return "No comparison data available."
+    
+    return html
 
 # Function to process query with MCP
 async def process_with_mcp_async(user_query):
@@ -449,7 +639,7 @@ async def process_with_mcp_async(user_query):
         print("Detected comparison query")
         results, cities, call_carbon, call_pollution = await handle_comparison(user_query)
         if results:
-            formatted = format_comparison_results(results, cities, user_query, call_carbon, call_pollution)
+            formatted = format_comparison_results(results, cities, call_carbon, call_pollution)
             return formatted, "Comparison_Tool"
     
     # Improved carbon footprint detection - check for city names
@@ -531,26 +721,10 @@ with st.sidebar:
     st.subheader("MCP Server Status")
     
     # Display MCP_HOST from environment
-    mcp_host = os.getenv('MCP_HOST', 'Not set')
+    mcp_host = os.getenv('MCP_HOST', 'greenmind-mcp-server.onrender.com')
     st.info(f"MCP Server: {mcp_host}")
     
-    # Test connection button
-    if st.button("Test MCP Connection"):
-        async def test_connection():
-            host = os.getenv('MCP_HOST', 'greenmind-agent.onrender.com')
-            client = MCPClient(host=host)
-            return await client.connect()
-        
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        status = loop.run_until_complete(test_connection())
-        loop.close()
-        
-        if status:
-            st.success("Connected")
-        else:
-            st.error("Connection failed")
-    
+    # Status display only (no test button)
     if st.session_state.mcp_connected:
         st.markdown('<div class="status-box connected">MCP Server Connected</div>', unsafe_allow_html=True)
     else:
@@ -588,7 +762,6 @@ if st.session_state.messages and len(st.session_state.messages) > 0:
                 <div class="quote-author">— {st.session_state.quote_data["author"]}</div>
             </div>
             '''
-            # Critical: This parameter makes the HTML render properly
             st.markdown(quote_html, unsafe_allow_html=True)
         
         st.markdown(st.session_state.messages[0]["content"])
@@ -609,7 +782,13 @@ if prompt:
     with st.chat_message("assistant"):
         with st.spinner("GreenMind is thinking..."):
             response, tool_used = process_with_mcp(prompt)
-            st.markdown(response)
+            
+            # If the response contains HTML (comparison), use markdown with unsafe_allow_html
+            if response.startswith('<div'):
+                st.markdown(response, unsafe_allow_html=True)
+            else:
+                st.markdown(response)
+            
             if tool_used:
                 st.caption(f"Used tool: {tool_used}")
     
