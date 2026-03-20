@@ -17,15 +17,34 @@ app = FastAPI(title="GreenMind MCP Server")
 # Initialize MCP server
 mcp_server = GreenMindMCPServer()
 
-# Register tools
-adapters = create_adapters()
+# Register tools with debug output
+print("=" * 50)
+print("REGISTERING TOOLS")
+print("=" * 50)
 
-for adapter in adapters:
-    mcp_server.register_tool(
-        adapter.name,
-        adapter.handle,
-        adapter.description
-    )
+try:
+    adapters = create_adapters()
+    print(f"create_adapters() returned {len(adapters) if adapters else 0} adapters")
+    
+    if adapters:
+        for adapter in adapters:
+            print(f"Attempting to register: {adapter.name}")
+            mcp_server.register_tool(
+                adapter.name,
+                adapter.handle,
+                adapter.description
+            )
+            print(f"Registered: {adapter.name}")
+    else:
+        print("No adapters returned from create_adapters()")
+        
+except Exception as e:
+    print(f"Error creating adapters: {str(e)}")
+    import traceback
+    traceback.print_exc()
+
+print(f"Total tools registered: {len(mcp_server.tools)}")
+print("=" * 50)
 
 
 # ------------------------------------------------
@@ -45,7 +64,8 @@ class ToolRequest(BaseModel):
 def health():
     return {
         "status": "running",
-        "service": "GreenMind MCP"
+        "service": "GreenMind MCP",
+        "tools": list(mcp_server.tools.keys())
     }
 
 
@@ -55,14 +75,16 @@ def health():
 
 @app.post("/call_tool")
 async def call_tool(req: ToolRequest):
-
+    print(f"Calling tool: {req.tool}")
+    
     if req.tool not in mcp_server.tools:
-        return {"error": f"Tool '{req.tool}' not found"}
-
+        error_msg = f"Tool '{req.tool}' not found. Available tools: {list(mcp_server.tools.keys())}"
+        print(error_msg)
+        return {"error": error_msg}
+    
     tool = mcp_server.tools[req.tool]
-
+    
     try:
-
         if asyncio.iscoroutinefunction(tool.handler):
             result = await tool.handler(input=req.input)
         else:
@@ -71,11 +93,22 @@ async def call_tool(req: ToolRequest):
                 None,
                 lambda: tool.handler(input=req.input)
             )
-
+        
         return {"result": result}
-
+    
     except Exception as e:
+        print(f"Error executing tool: {str(e)}")
         return {"error": str(e)}
+
+
+# ------------------------------------------------
+# Tools List Endpoint
+# ------------------------------------------------
+
+@app.get("/tools")
+def list_tools():
+    """Return list of all registered tools"""
+    return {"tools": list(mcp_server.tools.keys())}
 
 
 # ------------------------------------------------
@@ -83,9 +116,7 @@ async def call_tool(req: ToolRequest):
 # ------------------------------------------------
 
 if __name__ == "__main__":
-
     port = int(os.environ.get("PORT", 10000))
-
     uvicorn.run(
         "greenmind_mcp:app",
         host="0.0.0.0",
