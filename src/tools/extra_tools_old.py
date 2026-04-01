@@ -1,7 +1,7 @@
 # src/tools/extra_tools.py
 from langchain.tools import BaseTool
-from typing import Optional
 from langchain.callbacks.manager import CallbackManagerForToolRun
+from typing import Optional
 
 class CarbonFootprintCalculator(BaseTool):
     """Tool for calculating carbon footprint"""
