@@ -15,6 +15,9 @@ class PollutionIndexTool(BaseTool):
         "for any location. Input should be a location name."
     )
 
+    # 🔥 CRITICAL FIX → prevents LLM from rewriting output
+    return_direct: bool = True
+
     # ---------------------------
     # AQI CATEGORY
     # ---------------------------
@@ -40,14 +43,7 @@ class PollutionIndexTool(BaseTool):
         position = int((aqi / max_aqi) * bar_length)
         position = min(position, bar_length)
 
-        bar = ""
-        for i in range(bar_length):
-            if i < position:
-                bar += "█"
-            else:
-                bar += "░"
-
-        return bar
+        return "█" * position + "░" * (bar_length - position)
 
     # ---------------------------
     # AQI CALCULATION
@@ -56,6 +52,7 @@ class PollutionIndexTool(BaseTool):
         location = location.lower()
         location_hash = abs(hash(location)) % 1000
 
+        base_aqi = 50 + (location_hash % 100)
         name_factor = min(len(location) * 3, 50)
 
         metro = 30 if any(x in location for x in ['city', 'metro', 'capital', 'downtown']) else 0
@@ -65,10 +62,7 @@ class PollutionIndexTool(BaseTool):
         desert = 25 if any(x in location for x in ['desert', 'dust', 'dry']) else 0
         mountain = 10 if any(x in location for x in ['mountain', 'hill', 'valley']) else 0
 
-        base_aqi = 50 + (location_hash % 100)
-
         total = base_aqi + name_factor + metro + industrial + green + coastal + desert + mountain
-
         return max(15, min(350, total))
 
     # ---------------------------
@@ -121,45 +115,52 @@ class PollutionIndexTool(BaseTool):
             day_after_cat = self._get_aqi_category(day_after)[0]
 
             # ---------------------------
-            # FORCE LINE-BY-LINE OUTPUT
+            # HARD-FORMATTED OUTPUT
             # ---------------------------
-            lines = [
-                f"🌍 ENVIRONMENTAL HEALTH INDEX — {display}",
-                f"🕒 Data retrieved: {timestamp}",
-                "",
-                "📊 CURRENT CONDITIONS",
-                f"AQI: {aqi} ({category}) {color}",
-                "",
-                f"[{bar}] {aqi}/300",
-                "Low → → → → → → → → → → → → → → → → → → → → High",
-                "",
-                "🔬 DETAILED READINGS",
-                f"• PM2.5: {pm25} μg/m³ (Safe <25)",
-                f"• PM10:  {pm10} μg/m³ (Safe <50)",
-                f"• Ozone: {ozone} μg/m³ (Safe <50)",
-                f"• NO₂:   {no2} μg/m³ (Safe <25)",
-                "",
-                "💡 HEALTH RECOMMENDATION",
-                advice,
-                "",
-                "📅 FORECAST",
-                f"• Today: {aqi} ({category})",
-                f"• Tomorrow: {tomorrow} ({tomorrow_cat})",
-                f"• Day After: {day_after} ({day_after_cat})",
-                "",
-                "📘 AQI REFERENCE",
-                "0–50   🟢 Good",
-                "51–100 🟡 Moderate",
-                "101–150 🟠 Sensitive Groups",
-                "151–200 🔴 Unhealthy",
-                "201–300 🟣 Very Unhealthy",
-                "300+    ⚫ Hazardous",
-                "",
-                "⚠️ Note: This is simulated data."
-            ]
+            return (
+                f"🌍 ENVIRONMENTAL HEALTH INDEX — {display}\n\n"
+                f"🕒 Data retrieved: {timestamp}\n\n"
+                f"----------------------------------------\n\n"
 
-            # CRITICAL: join with explicit newline
-            return "\n".join(lines)
+                f"📊 CURRENT CONDITIONS\n"
+                f"AQI: {aqi} ({category}) {color}\n\n"
+                f"[{bar}] {aqi}/300\n"
+                f"Low → → → → → → → → → → → → → → → → → → → → High\n\n"
+
+                f"----------------------------------------\n\n"
+
+                f"🔬 DETAILED READINGS\n"
+                f"• PM2.5: {pm25} μg/m³ (Safe <25)\n"
+                f"• PM10: {pm10} μg/m³ (Safe <50)\n"
+                f"• Ozone: {ozone} μg/m³ (Safe <50)\n"
+                f"• NO₂: {no2} μg/m³ (Safe <25)\n\n"
+
+                f"----------------------------------------\n\n"
+
+                f"💡 HEALTH RECOMMENDATION\n"
+                f"{advice}\n\n"
+
+                f"----------------------------------------\n\n"
+
+                f"📅 FORECAST\n"
+                f"• Today: {aqi} ({category})\n"
+                f"• Tomorrow: {tomorrow} ({tomorrow_cat})\n"
+                f"• Day After: {day_after} ({day_after_cat})\n\n"
+
+                f"----------------------------------------\n\n"
+
+                f"📘 AQI REFERENCE\n"
+                f"0–50 🟢 Good\n"
+                f"51–100 🟡 Moderate\n"
+                f"101–150 🟠 Sensitive Groups\n"
+                f"151–200 🔴 Unhealthy\n"
+                f"201–300 🟣 Very Unhealthy\n"
+                f"300+ ⚫ Hazardous\n\n"
+
+                f"----------------------------------------\n\n"
+
+                f"⚠️ Note: This is simulated data."
+            )
 
         except Exception as e:
             return f"Error fetching pollution data: {str(e)}"
