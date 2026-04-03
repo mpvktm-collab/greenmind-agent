@@ -15,7 +15,6 @@ class PollutionIndexTool(BaseTool):
         "for any location. Input should be a location name."
     )
 
-    # 🔥 CRITICAL FIX → prevents LLM from rewriting output
     return_direct: bool = True
 
     # ---------------------------
@@ -159,7 +158,7 @@ class PollutionIndexTool(BaseTool):
 
                 f"----------------------------------------\n\n"
 
-                f"⚠️ Note: This is simulated data."
+            
             )
 
         except Exception as e:
