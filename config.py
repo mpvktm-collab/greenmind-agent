@@ -10,9 +10,9 @@ class Config:
     if not GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY not found in .env file. Please add it.")
     
-    # Model names
+    # Model names - UPDATED
     MODEL_NAME = "gemini-1.5-flash"
-    EMBEDDING_MODEL = "models/embedding-001"
+    EMBEDDING_MODEL = "models/text-embedding-004"  # Updated to current model
     TEMPERATURE = 0.7
     
     # Paths
@@ -21,7 +21,7 @@ class Config:
     LOG_DIRECTORY = os.path.join(BASE_DIR, "logs")
     DATA_DIRECTORY = os.path.join(BASE_DIR, "src", "data")
     
-    # ADD THESE MISSING LINES:
+    # Add these missing lines
     POLICIES_DIR = os.path.join(DATA_DIRECTORY, "policies")
     EFFECTS_DIR = os.path.join(DATA_DIRECTORY, "effects")
     
@@ -31,7 +31,7 @@ class Config:
     os.makedirs(POLICIES_DIR, exist_ok=True)
     os.makedirs(EFFECTS_DIR, exist_ok=True)
     
-    # Agent Character - GreenMind's personality
+    # Agent Character
     AGENT_PERSONALITY = """
     You are GreenMind, an enthusiastic and knowledgeable environmental sustainability advisor. 
     You're passionate about protecting our planet and always respond with hope and practical wisdom.
