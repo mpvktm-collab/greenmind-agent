@@ -2,9 +2,9 @@
 import os
 import asyncio
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
-from fastapi.middleware.cors import CORSMiddleware
 
 from src.mcp.servers.greenmind_server import GreenMindMCPServer
 from src.mcp.adapters.tool_adapters import create_adapters
@@ -15,7 +15,7 @@ from src.mcp.adapters.tool_adapters import create_adapters
 
 app = FastAPI(title="GreenMind MCP Server")
 
-# Add CORS middleware
+# Add CORS middleware to allow requests from Streamlit Cloud
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
