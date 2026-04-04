@@ -3,41 +3,17 @@ from typing import Optional
 from langchain.tools import BaseTool
 from langchain.callbacks.manager import CallbackManagerForToolRun
 import random
+import re
 
 class CarbonFootprintCalculator(BaseTool):
     """Tool for calculating carbon footprint"""
     
     name: str = "Carbon_Footprint_Calculator"
     description: str = """
-    Provides estimates of carbon footprint for various activities and suggests reduction strategies.
-    Use this when asked about carbon footprint of activities like driving, flying, electricity use, etc.
-    Also provides city-level carbon footprint estimates with color-coded comparisons.
-    Input should be an activity (car, flight, electricity, meat, plastic) or a city name.
+    Provides estimates of carbon footprint for cities and activities.
     """
     
-    def _get_footprint_color(self, value, low=2.0, high=5.0):
-        """Return color indicator based on carbon footprint value"""
-        if value <= low:
-            return "🟢"
-        elif value <= high:
-            return "🟡"
-        else:
-            return "🔴"
-    
-    def _create_comparison_bar(self, value, max_value=10, bar_length=20):
-        """Create a visual comparison bar"""
-        position = int((value / max_value) * bar_length)
-        if position > bar_length:
-            position = bar_length
-        
-        bar = ""
-        for i in range(bar_length):
-            if i < position:
-                bar += "█"
-            else:
-                bar += "░"
-        
-        return bar
+    return_direct: bool = True
     
     def _get_city_carbon_footprint(self, city):
         """Calculate approximate carbon footprint for a city"""
@@ -45,179 +21,82 @@ class CarbonFootprintCalculator(BaseTool):
         
         # City carbon profiles
         city_profiles = {
-            "delhi": {
-                "per_capita": 2.1,
-                "main_sources": ["transportation", "industrial", "power plants"],
-                "trend": "increasing",
-                "rank": "moderate"
-            },
-            "mumbai": {
-                "per_capita": 1.8,
-                "main_sources": ["transportation", "commercial", "power plants"],
-                "trend": "increasing",
-                "rank": "moderate"
-            },
-            "new york": {
-                "per_capita": 4.2,
-                "main_sources": ["buildings", "transportation", "waste"],
-                "trend": "stable",
-                "rank": "high"
-            },
-            "london": {
-                "per_capita": 3.8,
-                "main_sources": ["buildings", "transportation", "aviation"],
-                "trend": "decreasing",
-                "rank": "moderate-high"
-            },
-            "tokyo": {
-                "per_capita": 3.5,
-                "main_sources": ["buildings", "transportation", "industry"],
-                "trend": "stable",
-                "rank": "moderate-high"
-            },
-            "beijing": {
-                "per_capita": 5.1,
-                "main_sources": ["industry", "power plants", "transportation"],
-                "trend": "decreasing",
-                "rank": "very high"
-            },
-            "shanghai": {
-                "per_capita": 4.8,
-                "main_sources": ["industry", "shipping", "power plants"],
-                "trend": "increasing",
-                "rank": "high"
-            },
-            "paris": {
-                "per_capita": 2.9,
-                "main_sources": ["buildings", "transportation", "commercial"],
-                "trend": "decreasing",
-                "rank": "moderate"
-            },
-            "berlin": {
-                "per_capita": 3.1,
-                "main_sources": ["transportation", "buildings", "renewables"],
-                "trend": "decreasing",
-                "rank": "moderate"
-            },
-            "copenhagen": {
-                "per_capita": 2.3,
-                "main_sources": ["transportation", "buildings", "waste-to-energy"],
-                "trend": "decreasing",
-                "rank": "good"
-            },
-            "oslo": {
-                "per_capita": 1.9,
-                "main_sources": ["transportation", "buildings", "electric"],
-                "trend": "decreasing",
-                "rank": "good"
-            },
-            "singapore": {
-                "per_capita": 3.3,
-                "main_sources": ["industry", "shipping", "cooling"],
-                "trend": "increasing",
-                "rank": "moderate"
-            },
-            "los angeles": {
-                "per_capita": 3.9,
-                "main_sources": ["transportation", "buildings", "industry"],
-                "trend": "stable",
-                "rank": "high"
-            },
-            "chicago": {
-                "per_capita": 3.6,
-                "main_sources": ["buildings", "transportation", "industry"],
-                "trend": "stable",
-                "rank": "moderate-high"
-            },
-            "toronto": {
-                "per_capita": 3.4,
-                "main_sources": ["buildings", "transportation", "industry"],
-                "trend": "stable",
-                "rank": "moderate"
-            },
-            "mexico city": {
-                "per_capita": 2.8,
-                "main_sources": ["transportation", "industry", "residential"],
-                "trend": "increasing",
-                "rank": "moderate"
-            },
-            "dubai": {
-                "per_capita": 6.2,
-                "main_sources": ["buildings", "transportation", "desalination"],
-                "trend": "increasing",
-                "rank": "very high"
-            },
-            "moscow": {
-                "per_capita": 4.5,
-                "main_sources": ["buildings", "transportation", "industry"],
-                "trend": "stable",
-                "rank": "high"
-            }
+            "delhi": {"per_capita": 2.1, "main_sources": ["transportation", "industrial", "power plants"], "trend": "increasing", "rank": "moderate"},
+            "mumbai": {"per_capita": 1.8, "main_sources": ["transportation", "commercial", "power plants"], "trend": "increasing", "rank": "moderate"},
+            "new york": {"per_capita": 4.2, "main_sources": ["buildings", "transportation", "waste"], "trend": "stable", "rank": "high"},
+            "london": {"per_capita": 3.8, "main_sources": ["buildings", "transportation", "aviation"], "trend": "decreasing", "rank": "moderate-high"},
+            "tokyo": {"per_capita": 3.5, "main_sources": ["buildings", "transportation", "industry"], "trend": "stable", "rank": "moderate-high"},
+            "beijing": {"per_capita": 5.1, "main_sources": ["industry", "power plants", "transportation"], "trend": "decreasing", "rank": "very high"},
+            "paris": {"per_capita": 2.9, "main_sources": ["buildings", "transportation", "commercial"], "trend": "decreasing", "rank": "moderate"},
+            "berlin": {"per_capita": 3.1, "main_sources": ["transportation", "buildings", "renewables"], "trend": "decreasing", "rank": "moderate"},
+            "singapore": {"per_capita": 3.3, "main_sources": ["industry", "shipping", "cooling"], "trend": "increasing", "rank": "moderate"},
+            "los angeles": {"per_capita": 3.9, "main_sources": ["transportation", "buildings", "industry"], "trend": "stable", "rank": "high"},
+            "chicago": {"per_capita": 3.6, "main_sources": ["buildings", "transportation", "industry"], "trend": "stable", "rank": "moderate-high"},
+            "toronto": {"per_capita": 3.4, "main_sources": ["buildings", "transportation", "industry"], "trend": "stable", "rank": "moderate"},
+            "mexico city": {"per_capita": 2.8, "main_sources": ["transportation", "industry", "residential"], "trend": "increasing", "rank": "moderate"},
+            "dubai": {"per_capita": 6.2, "main_sources": ["buildings", "transportation", "desalination"], "trend": "increasing", "rank": "very high"},
+            "moscow": {"per_capita": 4.5, "main_sources": ["buildings", "transportation", "industry"], "trend": "stable", "rank": "high"},
+            "chennai": {"per_capita": 2.0, "main_sources": ["transportation", "industry", "residential"], "trend": "increasing", "rank": "moderate"},
+            "kolkata": {"per_capita": 1.9, "main_sources": ["transportation", "industry", "residential"], "trend": "increasing", "rank": "moderate"},
+            "bangalore": {"per_capita": 2.2, "main_sources": ["transportation", "IT sector", "residential"], "trend": "increasing", "rank": "moderate"},
+            "hyderabad": {"per_capita": 2.0, "main_sources": ["transportation", "industry", "residential"], "trend": "increasing", "rank": "moderate"},
+            "ahmedabad": {"per_capita": 2.3, "main_sources": ["transportation", "industry", "residential"], "trend": "increasing", "rank": "moderate"},
+            "pune": {"per_capita": 2.1, "main_sources": ["transportation", "industry", "residential"], "trend": "increasing", "rank": "moderate"}
         }
         
-        # Check if city is in profiles
         for city_name, profile in city_profiles.items():
             if city_name in city_lower:
-                return profile
+                return profile.copy()
         
-        # Default for unknown cities
-        name_length = len(city)
-        if name_length < 5:
-            per_capita = 2.5 + random.random() * 1.5
-            rank = "moderate"
-        elif name_length < 8:
-            per_capita = 3.0 + random.random() * 2.0
-            rank = "moderate-high"
-        else:
-            per_capita = 3.5 + random.random() * 2.5
-            rank = "high"
-        
-        trends = ["increasing", "stable", "decreasing"]
-        trend = random.choice(trends)
-        
-        return {
-            "per_capita": round(per_capita, 1),
-            "main_sources": ["transportation", "industry", "residential"],
-            "trend": trend,
-            "rank": rank
-        }
+        return {"per_capita": 3.0, "main_sources": ["transportation", "industry", "residential"], "trend": "stable", "rank": "moderate"}
     
     def _run(self, activity: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        """Calculate carbon footprint for common activities or cities"""
+        """Calculate carbon footprint for cities or activities"""
         
         activity_lower = activity.lower()
         
-        # City keywords
-        city_keywords = [
+        # List of known cities
+        known_cities = [
             'delhi', 'mumbai', 'new york', 'london', 'tokyo', 'beijing', 'shanghai',
-            'paris', 'berlin', 'sydney', 'melbourne', 'copenhagen', 'oslo', 'singapore',
-            'hong kong', 'los angeles', 'chicago', 'toronto', 'mexico city', 'dubai',
-            'moscow', 'new york city', 'nyc'
+            'paris', 'berlin', 'sydney', 'melbourne', 'singapore', 'los angeles',
+            'chicago', 'toronto', 'mexico city', 'dubai', 'moscow', 'chennai',
+            'kolkata', 'bangalore', 'hyderabad', 'ahmedabad', 'pune'
         ]
         
-        # Check if this is a city query
+        # Check if query contains a city name
         is_city_query = False
-        extracted_city = None
+        city_found = None
         
-        for city in city_keywords:
+        for city in known_cities:
             if city in activity_lower:
                 is_city_query = True
-                extracted_city = city
+                city_found = city
                 break
         
-        # Check for "carbon footprint of [city]" pattern
+        # Also check for "carbon footprint of X" pattern
         if 'carbon footprint of' in activity_lower:
             is_city_query = True
-            parts = activity_lower.split('of')
-            if len(parts) > 1:
-                extracted_city = parts[1].strip().replace('?', '').strip()
+            match = re.search(r'carbon footprint of\s+([a-zA-Z\s]+?)(?:\?|$)', activity_lower)
+            if match:
+                city_found = match.group(1).strip()
         
-        if is_city_query and extracted_city:
-            city_name = extracted_city.replace('?', '').strip()
+        # Handle city query
+        if is_city_query and city_found:
+            profile = self._get_city_carbon_footprint(city_found)
             
-            profile = self._get_city_carbon_footprint(city_name)
-            color = self._get_footprint_color(profile['per_capita'])
-            comparison_bar = self._create_comparison_bar(profile['per_capita'])
+            if profile['per_capita'] <= 2.0:
+                color = "🟢"
+                level = "Low Impact"
+            elif profile['per_capita'] <= 5.0:
+                color = "🟡"
+                level = "Moderate Impact"
+            else:
+                color = "🔴"
+                level = "High Impact"
+            
+            bar_length = 20
+            position = int((profile['per_capita'] / 10) * bar_length)
+            bar = "█" * position + "░" * (bar_length - position)
             
             if profile['trend'] == 'increasing':
                 trend_arrow = "↗️"
@@ -227,148 +106,175 @@ class CarbonFootprintCalculator(BaseTool):
                 trend_arrow = "→"
             
             return f"""
+========================================
+CARBON FOOTPRINT: {city_found.upper()}
+========================================
 
-CARBON FOOTPRINT for {city_name.upper()}
+Per Capita Carbon Footprint: {profile['per_capita']} tons CO2/year {color}
+Impact Level: {level}
 
-Estimated per capita carbon footprint: {profile['per_capita']} tons CO2 per year {color}
-
-Comparison to global cities:
-{comparison_bar} {profile['per_capita']}/10 tons
+Visual Indicator:
+[{bar}] {profile['per_capita']}/10 tons
 Low → → → → → → → → → → → → → → → → → → → → High
 
 Rank: {profile['rank'].upper()}
 Trend: {trend_arrow} {profile['trend']}
 
-Main sources:
+Main Emission Sources:
 • {profile['main_sources'][0]}
 • {profile['main_sources'][1]}
 • {profile['main_sources'][2]}
 
-Global benchmarks:
-🟢 Less than 2.0 tons: Sustainable target
+Global Benchmarks:
+🟢 Less than 2.0 tons: Sustainable Target
 🟡 2.0 - 5.0 tons: Moderate
 🔴 Greater than 5.0 tons: High
 
-REDUCTION STRATEGIES FOR CITIES:
-1. Expand public transportation infrastructure
+Recommended Reduction Strategies:
+1. Expand public transportation
 2. Increase renewable energy adoption
-3. Implement building energy efficiency programs
+3. Implement building efficiency programs
 4. Create low-emission zones
-5. Invest in green spaces and urban forestry
-6. Promote electric vehicle adoption
-7. Improve waste management and recycling
+5. Promote electric vehicles
 
-Note: This is estimated data for demonstration purposes.
+========================================
 """
         
-        # Activity-based calculations
+        # Handle car query
         if "car" in activity_lower or "drive" in activity_lower:
             return """
-
+========================================
 CARBON FOOTPRINT: Car Travel
-• Gasoline car: 2.3 kg CO2 per 10 km 🟡
-• Electric vehicle: 1.2 kg CO2 per 10 km 🟢
-• Hybrid: 1.5 kg CO2 per 10 km 🟢
+========================================
+
+Per 10 km emissions:
+• Gasoline car: 2.3 kg CO2 🟡
+• Electric vehicle: 1.2 kg CO2 🟢
+• Hybrid: 1.5 kg CO2 🟢
 
 Comparison:
 🟢 Electric/Hybrid: Best choice
 🟡 Gasoline: Moderate impact
 🔴 Diesel: Highest impact
 
-REDUCTION TIPS:
+Reduction Tips:
 • Carpool with colleagues 🟢
-• Use public transportation when possible 🟢
+• Use public transportation 🟢
 • Maintain proper tire pressure 🟡
-• Consider an electric or hybrid vehicle 🟢
+• Consider electric/hybrid vehicle 🟢
 • Combine errands to reduce trips 🟡
+
+========================================
 """
-        elif "flight" in activity_lower or "fly" in activity_lower or "plane" in activity_lower:
+        
+        # Handle flight query
+        if "flight" in activity_lower or "fly" in activity_lower or "plane" in activity_lower:
             return """
-
+========================================
 CARBON FOOTPRINT: Air Travel
-• Short flight (less than 1 hour): 90 kg CO2 per hour 🔴
-• Long flight: 120 kg CO2 per hour 🔴
-• Round trip NYC-London: approximately 1.5 tons CO2 🔴
+========================================
 
-Comparison:
-🟢 Train: 6 kg CO2 per 100 km
-🟡 Bus: 15 kg CO2 per 100 km
-🔴 Plane: 25 kg CO2 per 100 km
+Emissions:
+• Short flight (under 1 hour): 90 kg CO2/hour 🔴
+• Long flight: 120 kg CO2/hour 🔴
+• Round trip NYC-London: ~1.5 tons CO2 🔴
 
-REDUCTION TIPS:
+Comparison per 100 km:
+🟢 Train: 6 kg CO2
+🟡 Bus: 15 kg CO2
+🔴 Plane: 25 kg CO2
+
+Reduction Tips:
 • Take direct flights 🟢
 • Choose economy class 🟢
-• Consider trains for short distances 🟢
-• Offset your flights through certified programs 🟡
-• Video conference instead of business travel 🟢
-"""
-        elif "electricity" in activity_lower or "energy" in activity_lower or "power" in activity_lower:
-            return """
+• Use trains for short distances 🟢
+• Offset emissions through certified programs 🟡
+• Use video conferencing instead 🟢
 
+========================================
+"""
+        
+        # Handle electricity query
+        if "electricity" in activity_lower or "energy" in activity_lower:
+            return """
+========================================
 CARBON FOOTPRINT: Electricity Use
-• Average home: 0.5 kg CO2 per kWh 🟡
-• Monthly average: 300-400 kg CO2 🟡
-• Annual average: 4-5 tons CO2 🟡
+========================================
 
-Comparison by energy source:
-🟢 Solar/Wind: 0.02 kg CO2 per kWh
-🟢 Nuclear: 0.01 kg CO2 per kWh
-🟡 Natural Gas: 0.4 kg CO2 per kWh
-🔴 Coal: 1.0 kg CO2 per kWh
+Average home: 0.5 kg CO2 per kWh 🟡
+Monthly average: 300-400 kg CO2 🟡
+Annual average: 4-5 tons CO2 🟡
 
-REDUCTION TIPS:
+By Energy Source (per kWh):
+🟢 Solar/Wind: 0.02 kg CO2
+🟢 Nuclear: 0.01 kg CO2
+🟡 Natural Gas: 0.4 kg CO2
+🔴 Coal: 1.0 kg CO2
+
+Reduction Tips:
 • Switch to LED bulbs 🟢
-• Unplug electronics when not in use 🟢
+• Unplug unused electronics 🟢
 • Use energy-efficient appliances 🟢
-• Install a programmable thermostat 🟡
+• Install programmable thermostat 🟡
 • Consider solar panels 🟢
-• Choose green energy provider 🟢
+
+========================================
 """
-        elif "meat" in activity_lower or "food" in activity_lower or "diet" in activity_lower:
+        
+        # Handle food/meat query
+        if "meat" in activity_lower or "food" in activity_lower or "diet" in activity_lower:
             return """
-
+========================================
 CARBON FOOTPRINT: Food Choices
-• Meat-heavy diet: 3.5 kg CO2 per meal 🔴
-• Vegetarian diet: 1.7 kg CO2 per meal 🟡
-• Vegan diet: 1.2 kg CO2 per meal 🟢
+========================================
 
-Food comparison (per kg):
+Per Meal:
+• Meat-heavy diet: 3.5 kg CO2 🔴
+• Vegetarian diet: 1.7 kg CO2 🟡
+• Vegan diet: 1.2 kg CO2 🟢
+
+Per kg of Food:
 🔴 Beef: 27 kg CO2
 🟡 Pork: 7 kg CO2
 🟡 Chicken: 6 kg CO2
 🟢 Vegetables: 2 kg CO2
 🟢 Grains: 1.5 kg CO2
 
-REDUCTION TIPS:
+Reduction Tips:
 • Try meat-free Mondays 🟢
 • Choose locally-grown food 🟢
 • Reduce food waste 🟢
 • Buy seasonal produce 🟡
 • Compost food scraps 🟢
-"""
-        else:
-            return """
 
-Please specify an activity or city:
+========================================
+"""
+        
+        # Default response
+        return """
+========================================
+CARBON FOOTPRINT CALCULATOR
+========================================
+
+Please ask about:
 
 CITIES (examples):
-• "carbon footprint of Delhi"
-• "emissions for New York"
-• "carbon footprint London"
-• "per capita carbon Tokyo"
+• "What is the carbon footprint of Delhi?"
+• "Carbon footprint of New York City"
+• "Emissions for London"
 
 ACTIVITIES (examples):
-• "car carbon footprint"
-• "flight emissions"
-• "home energy carbon footprint"
-• "meat consumption carbon"
+• "Car carbon footprint"
+• "Flight emissions"
+• "Home energy carbon footprint"
+• "Meat consumption carbon"
 
 Color Guide:
-🟢 Low impact / Best practice
+🟢 Low impact
 🟡 Moderate impact
-🔴 High impact / Needs improvement
+🔴 High impact
 
-Example: "carbon footprint of Delhi" or "flight emissions"
+========================================
 """
 
     async def _arun(self, activity: str) -> str:
@@ -379,113 +285,78 @@ class SustainabilityTipsTool(BaseTool):
     """Tool for providing sustainability tips"""
     
     name: str = "Sustainability_Tips"
-    description: str = """
-    Provides practical, everyday tips for living more sustainably and reducing environmental impact.
-    Use this when asked for eco-friendly tips, sustainable living advice, or green lifestyle suggestions.
-    Input can be a category (home, transport, food, waste, general) or leave empty for general tips.
-    """
-    
-    def _get_category_color(self, category):
-        """Get color for category header"""
-        colors = {
-            "home": "🏠",
-            "transport": "🚗",
-            "food": "🍎",
-            "waste": "♻️",
-            "general": "🌍"
-        }
-        return colors.get(category, "📌")
+    description: str = "Provides practical tips for sustainable living."
+    return_direct: bool = True
     
     def _run(self, category: str = "general", run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         """Get sustainability tips by category"""
         
-        tips = {
+        category = category.lower().strip()
+        
+        tips_data = {
             "home": [
-                ("Switch to LED bulbs - they use 75% less energy", "🟢"),
-                ("Unplug electronics when not in use", "🟢"),
-                ("Use energy-efficient appliances", "🟢"),
-                ("Install a programmable thermostat", "🟡"),
-                ("Improve home insulation", "🟡"),
-                ("Use cold water for laundry", "🟢"),
-                ("Air dry clothes instead of using a dryer", "🟢"),
-                ("Fix leaky faucets promptly", "🟢"),
-                ("Install low-flow showerheads", "🟢"),
-                ("Use natural light during daytime", "🟢")
+                "Switch to LED bulbs - they use 75% less energy 🟢",
+                "Unplug electronics when not in use 🟢",
+                "Use cold water for laundry 🟢",
+                "Air dry clothes instead of using a dryer 🟢",
+                "Fix leaky faucets promptly 🟢",
+                "Install low-flow showerheads 🟢"
             ],
             "transport": [
-                ("Walk or bike for short trips under 2 miles", "🟢"),
-                ("Use public transportation for commuting", "🟢"),
-                ("Carpool with colleagues or neighbors", "🟢"),
-                ("Maintain proper tire pressure", "🟡"),
-                ("Consider an electric or hybrid vehicle", "🟢"),
-                ("Combine errands into one trip", "🟡"),
-                ("Avoid excessive idling", "🟢"),
-                ("Use ride-sharing services wisely", "🟡"),
-                ("Choose direct flights when flying", "🟡"),
-                ("Offset unavoidable travel emissions", "🟡")
+                "Walk or bike for short trips under 2 miles 🟢",
+                "Use public transportation for commuting 🟢",
+                "Carpool with colleagues or neighbors 🟢",
+                "Maintain proper tire pressure 🟡",
+                "Consider an electric or hybrid vehicle 🟢",
+                "Avoid excessive idling 🟢"
             ],
             "food": [
-                ("Eat locally-grown, seasonal food", "🟢"),
-                ("Reduce food waste by meal planning", "🟢"),
-                ("Choose plant-based meals", "🟢"),
-                ("Compost food scraps", "🟢"),
-                ("Grow your own vegetables or herbs", "🟢"),
-                ("Buy in bulk to reduce packaging", "🟡"),
-                ("Bring reusable containers for takeout", "🟢"),
-                ("Support farmers markets", "🟢"),
-                ("Choose sustainably caught seafood", "🟡"),
-                ("Avoid single-use plastic water bottles", "🟢")
+                "Eat locally-grown, seasonal food 🟢",
+                "Reduce food waste by meal planning 🟢",
+                "Choose plant-based meals a few times a week 🟢",
+                "Compost food scraps 🟢",
+                "Bring reusable containers for takeout 🟢",
+                "Avoid single-use plastic water bottles 🟢"
             ],
             "waste": [
-                ("Practice the 3 R's: Reduce, Reuse, Recycle", "🟢"),
-                ("Avoid single-use plastics", "🟢"),
-                ("Use reusable bags, bottles, and containers", "🟢"),
-                ("Repair items instead of replacing them", "🟢"),
-                ("Buy products with minimal packaging", "🟢"),
-                ("Start a composting system", "🟢"),
-                ("Donate unwanted items", "🟢"),
-                ("Use both sides of paper", "🟢"),
-                ("Choose products made from recycled materials", "🟡"),
-                ("Properly dispose of hazardous waste", "🔴")
+                "Practice the 3 R's: Reduce, Reuse, Recycle 🟢",
+                "Avoid single-use plastics 🟢",
+                "Use reusable bags, bottles, and containers 🟢",
+                "Repair items instead of replacing them 🟢",
+                "Start a composting system 🟢",
+                "Donate unwanted items instead of throwing away 🟢"
             ],
             "general": [
-                ("Plant native trees and plants in your community", "🟢"),
-                ("Support eco-friendly businesses", "🟢"),
-                ("Educate others about environmental issues", "🟢"),
-                ("Participate in local clean-up events", "🟢"),
-                ("Choose sustainable and ethical products", "🟡"),
-                ("Reduce water usage by taking shorter showers", "🟢"),
-                ("Use natural cleaning products", "🟢"),
-                ("Opt for digital documents instead of paper", "🟢"),
-                ("Invest in renewable energy if possible", "🟢"),
-                ("Calculate and track your carbon footprint", "🟡")
+                "Plant native trees and plants in your community 🟢",
+                "Support eco-friendly businesses 🟢",
+                "Participate in local clean-up events 🟢",
+                "Reduce water usage by taking shorter showers 🟢",
+                "Use natural cleaning products 🟢",
+                "Calculate and track your carbon footprint 🟡"
             ]
         }
         
-        category = category.lower().strip()
-        if category not in tips:
+        if category not in tips_data:
             category = "general"
         
-        icon = self._get_category_color(category)
-        response_lines = [
-            f"{icon} {category.upper()} SUSTAINABILITY TIPS {icon}",
-            ""
-        ]
+        output = f"""
+========================================
+{category.upper()} SUSTAINABILITY TIPS
+========================================
+
+"""
+        for i, tip in enumerate(tips_data[category], 1):
+            output += f"{i}. {tip}\n"
         
-        for i, (tip, color) in enumerate(tips[category], 1):
-            response_lines.append(f"{i}. {color} {tip}")
-        
-        response_lines.extend([
-            "",
-            "Color Guide:",
-            "🟢 Easy / High impact",
-            "🟡 Moderate effort / Medium impact",
-            "🔴 Advanced / Special circumstances",
-            "",
-            "Every small action counts towards a greener planet!"
-        ])
-        
-        return "\n".join(response_lines)
+        output += """
+
+Color Guide:
+🟢 Easy / High impact
+🟡 Moderate effort / Medium impact
+
+========================================
+"""
+        return output
     
     async def _arun(self, category: str = "general") -> str:
         return self._run(category)
