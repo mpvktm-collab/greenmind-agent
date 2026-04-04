@@ -1,4 +1,4 @@
-# app.py - Complete version with visually appealing formatting
+# app.py - Complete version with all required tools
 import streamlit as st
 import sys
 import os
@@ -6,19 +6,16 @@ import asyncio
 import re
 from datetime import datetime
 
-# Add the project root to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 from src.mcp.client.mcp_client import MCPClient
 from config import Config
 
-# Initialize MCP client in session state (only once)
+# Initialize session state
 if "mcp_client" not in st.session_state:
     st.session_state.mcp_client = None
     st.session_state.mcp_connected = False
     st.session_state.connection_attempted = False
 
-# Page configuration with sidebar expanded by default
 st.set_page_config(
     page_title="GreenMind - Environmental Sustainability Advisor",
     page_icon="🌍",
@@ -26,23 +23,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Force sidebar to stay expanded with CSS
-st.markdown(
-    """
-    <style>
-        section[data-testid="stSidebar"][aria-expanded="true"] {
-            display: block;
-        }
-        section[data-testid="stSidebar"][aria-expanded="false"] {
-            display: block;
-            margin-left: 0;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# Custom CSS with stylish quote formatting and comparison styling
+# Custom CSS
 st.markdown("""
 <style>
     .main-header {
@@ -52,548 +33,110 @@ st.markdown("""
         color: white;
         text-align: center;
         margin-bottom: 2rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    .main-header h1 {
-        font-size: 2.2rem;
-        margin-bottom: 0.3rem;
-        font-weight: 600;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-    }
-    .main-header h3 {
-        font-size: 1.2rem;
-        font-weight: 300;
-        opacity: 0.95;
-        font-style: italic;
-    }
-    
-    /* Stylish quote box */
+    .main-header h1 { font-size: 2.2rem; margin-bottom: 0.3rem; }
+    .main-header h3 { font-size: 1.2rem; font-weight: 300; font-style: italic; }
     .elegant-quote {
         background: linear-gradient(135deg, #f5f7fa 0%, #e8f0e8 100%);
         padding: 1.5rem;
         border-radius: 15px;
         margin: 1.5rem 0;
         text-align: center;
-        box-shadow: 0 4px 15px rgba(46, 125, 50, 0.15);
         border-left: 6px solid #2E7D32;
-        position: relative;
     }
-    .elegant-quote::before {
-        content: '"';
-        font-size: 4rem;
-        color: #2E7D32;
-        opacity: 0.3;
-        position: absolute;
-        top: -10px;
-        left: 10px;
-        font-family: Georgia, serif;
-    }
-    .elegant-quote::after {
-        content: '"';
-        font-size: 4rem;
-        color: #2E7D32;
-        opacity: 0.3;
-        position: absolute;
-        bottom: -30px;
-        right: 10px;
-        font-family: Georgia, serif;
-    }
-    .quote-text {
-        font-size: 1.3rem;
-        font-style: italic;
-        color: #1e3a2e;
-        font-weight: 500;
-        line-height: 1.6;
-        margin-bottom: 0.5rem;
-        font-family: 'Georgia', serif;
-    }
-    .quote-author {
-        font-size: 1rem;
-        color: #4a7850;
-        font-weight: 400;
-        text-align: right;
-        margin-top: 0.5rem;
-        font-family: 'Arial', sans-serif;
-        letter-spacing: 1px;
-    }
-    
-    /* Comparison Card Styles */
-    .comparison-container {
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-        margin: 20px 0;
-    }
-    .city-card {
-        flex: 1;
-        min-width: 250px;
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        border-top: 5px solid;
-        transition: transform 0.3s ease;
-    }
-    .city-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-    }
-    .city-title {
-        font-size: 1.5rem;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #e0e0e0;
-    }
-    .aqi-value {
-        font-size: 2rem;
-        font-weight: bold;
-        text-align: center;
-        margin: 15px 0;
-    }
-    .pm-value {
-        font-size: 0.9rem;
-        margin: 8px 0;
-        display: flex;
-        justify-content: space-between;
-        padding: 5px 10px;
-        background: #f5f5f5;
-        border-radius: 8px;
-    }
-    .aqi-bar {
-        height: 8px;
-        border-radius: 4px;
-        margin: 10px 0;
-        overflow: hidden;
-    }
-    .aqi-fill {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.5s ease;
-    }
-    .good { color: #00e676; border-top-color: #00e676; }
-    .moderate { color: #ffeb3b; border-top-color: #ffeb3b; }
-    .unhealthy-sensitive { color: #ff9800; border-top-color: #ff9800; }
-    .unhealthy { color: #f44336; border-top-color: #f44336; }
-    .very-unhealthy { color: #9c27b0; border-top-color: #9c27b0; }
-    .hazardous { color: #000000; border-top-color: #000000; }
-    
-    .aqi-good { background: #00e676; }
-    .aqi-moderate { background: #ffeb3b; }
-    .aqi-unhealthy-sensitive { background: #ff9800; }
-    .aqi-unhealthy { background: #f44336; }
-    .aqi-very-unhealthy { background: #9c27b0; }
-    .aqi-hazardous { background: #000000; }
-    
-    .comparison-header {
-        font-size: 1.8rem;
-        font-weight: bold;
-        text-align: center;
-        margin: 20px 0;
-        color: #2E7D32;
-    }
-    .note-box {
-        background: #fff3e0;
-        border-left: 4px solid #ff9800;
-        padding: 10px 15px;
-        margin: 20px 0;
-        border-radius: 8px;
-        font-size: 0.85rem;
-        color: #666;
-    }
-    
-    /* Chat message styling */
-    .stChatMessage {
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 12px;
-        margin: 8px 0;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        border: 1px solid #e0e0e0;
-    }
-    .stChatMessage p {
-        font-weight: normal;
-        margin-bottom: 0.5rem;
-        font-size: 1rem;
-        line-height: 1.5;
-    }
-    .stChatMessage h1, .stChatMessage h2, .stChatMessage h3 {
-        font-size: 1.2rem !important;
-        font-weight: 600 !important;
-        margin-top: 0.5rem !important;
-        margin-bottom: 0.5rem !important;
-        color: #2E7D32;
-    }
-    .stChatMessage strong {
-        font-weight: 600;
-        color: #1e3a2e;
-    }
-    
-    /* Sidebar styling */
-    .sidebar-content {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 10px;
-    }
-    .status-box {
-        padding: 0.8rem;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-        font-size: 0.95rem;
-        font-weight: 500;
-        text-align: center;
-    }
-    .connected {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    .disconnected {
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    /* Tool list styling */
-    .tool-item {
-        padding: 0.3rem 0;
-        color: #2E7D32;
-        font-weight: 500;
-    }
-    
-    /* Footer styling */
-    .footer {
-        text-align: center;
-        color: #666;
-        padding: 1rem;
-        font-size: 0.85rem;
-        border-top: 1px solid #e0e0e0;
-        margin-top: 2rem;
-        background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
-    }
-    .footer small {
-        color: #4a7850;
-        font-style: italic;
-    }
-    
-    hr {
-        margin: 1rem 0;
-        border: 0;
-        height: 1px;
-        background: linear-gradient(to right, transparent, #2E7D32, transparent);
-    }
+    .quote-text { font-size: 1.3rem; font-style: italic; color: #1e3a2e; }
+    .quote-author { font-size: 1rem; color: #4a7850; text-align: right; margin-top: 0.5rem; }
+    .status-box { padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; text-align: center; }
+    .connected { background-color: #d4edda; color: #155724; }
+    .disconnected { background-color: #f8d7da; color: #721c24; }
+    .footer { text-align: center; color: #666; padding: 1rem; margin-top: 2rem; border-top: 1px solid #e0e0e0; }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state for messages
+# Welcome message with environmental quote
 if 'messages' not in st.session_state:
-    # Welcome message with stylish environmental quote
     welcome_quotes = [
         {"text": "The earth is what we all have in common.", "author": "Wendell Berry"},
-        {"text": "The environment is where we all meet; where we all have a mutual interest.", "author": "Lady Bird Johnson"},
         {"text": "We do not inherit the earth from our ancestors; we borrow it from our children.", "author": "Native American Proverb"},
         {"text": "The greatest threat to our planet is the belief that someone else will save it.", "author": "Robert Swan"},
-        {"text": "Look deep into nature, and then you will understand everything better.", "author": "Albert Einstein"},
-        {"text": "The Earth does not belong to us: we belong to the Earth.", "author": "Marlee Matlin"},
-        {"text": "Nature is painting for us, day after day, pictures of infinite beauty.", "author": "John Ruskin"},
-        {"text": "The poetry of the earth is never dead.", "author": "John Keats"},
-        {"text": "In every walk with nature, one receives far more than he seeks.", "author": "John Muir"},
-        {"text": "The environment and the economy are really both two sides of the same coin.", "author": "Christine Lagarde"}
+        {"text": "The environment is where we all meet; where we all have a mutual interest.", "author": "Lady Bird Johnson"}
     ]
     today_quote = welcome_quotes[datetime.now().day % len(welcome_quotes)]
     
-    # Store quote data separately
     st.session_state.quote_data = today_quote
-    
-    # Store plain text message
     st.session_state.messages = [{
         "role": "assistant",
-        "content": f"Hello! I'm GreenMind, your environmental sustainability advisor.\n\n"
-                  f"I can help you with:\n"
-                  f"• Environmental policies and regulations\n"
-                  f"• Environmental effects and impacts (including health effects)\n"
-                  f"• Current environmental news\n"
-                  f"• Pollution and health indices\n"
-                  f"• Carbon footprint calculations\n"
-                  f"• Sustainability tips\n"
-                  f"• Comparisons between cities or environmental factors\n\n"
-                  f"How can I help you protect our planet today?"
+        "content": "Hello! I'm GreenMind, your environmental sustainability advisor.\n\nI can help you with:\n• Environmental Policies and Regulations\n• Environmental Effects and Health Impacts\n• Current Environmental News (Web Search)\n• Pollution Index and Air Quality (AQI)\n• Carbon Footprint Calculations\n• Sustainability Tips\n• City Comparisons\n\nHow can I help you protect our planet today?"
     }]
 
-# List of major cities
-MAJOR_CITIES = [
-    'delhi', 'mumbai', 'bombay', 'chennai', 'hyderabad', 'kolkata', 'calcutta', 'bangalore', 
-    'cochin', 'kochi', 'ernakulam', 'trivandrum', 'thiruvananthapuram',
-    'ahmedabad', 'pune', 'jaipur', 'lucknow', 'kanpur', 'nagpur', 'indore', 'bhopal',
-    'new york', 'los angeles', 'chicago', 'london', 'paris', 'tokyo', 'beijing', 'shanghai',
-    'sydney', 'melbourne', 'toronto', 'vancouver', 'mexico city', 'sao paulo', 'dubai',
-    'singapore', 'hong kong', 'seoul', 'bangkok', 'jakarta', 'moscow', 'berlin', 'rome',
-    'madrid', 'barcelona', 'amsterdam', 'brussels', 'vienna', 'zurich', 'stockholm',
-    'oslo', 'helsinki', 'dublin', 'edinburgh', 'glasgow', 'manchester', 'birmingham'
-]
+MAJOR_CITIES = ['delhi', 'mumbai', 'chennai', 'hyderabad', 'kolkata', 'bangalore', 'new york', 'los angeles', 'chicago', 'london', 'paris', 'tokyo', 'beijing', 'shanghai']
 
-# Function to get AQI color class
-def get_aqi_class(aqi):
-    if aqi <= 50:
-        return "good", "aqi-good"
-    elif aqi <= 100:
-        return "moderate", "aqi-moderate"
-    elif aqi <= 150:
-        return "unhealthy-sensitive", "aqi-unhealthy-sensitive"
-    elif aqi <= 200:
-        return "unhealthy", "aqi-unhealthy"
-    elif aqi <= 300:
-        return "very-unhealthy", "aqi-very-unhealthy"
-    else:
-        return "hazardous", "aqi-hazardous"
-
-# Function to get AQI text
-def get_aqi_text(aqi):
-    if aqi <= 50:
-        return "Good"
-    elif aqi <= 100:
-        return "Moderate"
-    elif aqi <= 150:
-        return "Unhealthy for Sensitive Groups"
-    elif aqi <= 200:
-        return "Unhealthy"
-    elif aqi <= 300:
-        return "Very Unhealthy"
-    else:
-        return "Hazardous"
-
-# Function to format comparison results with HTML
-def format_comparison_html(results, cities, call_pollution):
-    if not call_pollution:
-        return None
-    
-    html = '<div class="comparison-header">🌍 Environmental Comparison</div>'
-    html += '<div class="comparison-container">'
-    
-    for city in cities[:3]:
-        aqi_key = f"aqi_{city}"
-        if aqi_key in results:
-            aqi_text = results[aqi_key]
-            
-            # Extract values
-            aqi_match = re.search(r'AQI\):\s*(\d+)', aqi_text)
-            pm25_match = re.search(r'PM2\.5:\s*(\d+)', aqi_text)
-            pm10_match = re.search(r'PM10:\s*(\d+)', aqi_text)
-            
-            if aqi_match:
-                aqi_value = int(aqi_match.group(1))
-                aqi_class, aqi_color_class = get_aqi_class(aqi_value)
-                aqi_category = get_aqi_text(aqi_value)
-                fill_percent = min(100, (aqi_value / 300) * 100)
-                
-                html += f'''
-                <div class="city-card {aqi_class}">
-                    <div class="city-title">📍 {city.upper()}</div>
-                    <div class="aqi-value">
-                        <span class="{aqi_class}">{aqi_value}</span>
-                    </div>
-                    <div style="text-align: center; font-size: 0.9rem; margin: 5px 0;">{aqi_category}</div>
-                    <div class="aqi-bar">
-                        <div class="aqi-fill {aqi_color_class}" style="width: {fill_percent}%;"></div>
-                    </div>
-                '''
-                
-                if pm25_match:
-                    pm25 = pm25_match.group(1)
-                    html += f'<div class="pm-value"><span>PM2.5</span><span>{pm25} μg/m³</span></div>'
-                
-                if pm10_match:
-                    pm10 = pm10_match.group(1)
-                    html += f'<div class="pm-value"><span>PM10</span><span>{pm10} μg/m³</span></div>'
-                
-                html += '</div>'
-    
-    html += '</div>'
-    html += '<div class="note-box">Note: These are simulated values based on location characteristics. For production, connect to real APIs like OpenAQ or WAQI.</div>'
-    
-    return html
-
-# Function to format carbon footprint results
-def format_carbon_html(results, cities, call_carbon):
-    if not call_carbon:
-        return None
-    
-    html = '<div class="comparison-header">🌱 Carbon Footprint Comparison</div>'
-    html += '<div class="comparison-container">'
-    
-    for city in cities[:3]:
-        carbon_key = f"carbon_{city}"
-        if carbon_key in results:
-            carbon_text = results[carbon_key]
-            carbon_match = re.search(r'(\d+\.?\d*)\s*tons', carbon_text)
-            
-            if carbon_match:
-                carbon_value = float(carbon_match.group(1))
-                if carbon_value <= 2.0:
-                    footprint_class = "good"
-                    footprint_label = "Low Impact"
-                elif carbon_value <= 5.0:
-                    footprint_class = "moderate"
-                    footprint_label = "Moderate Impact"
-                else:
-                    footprint_class = "unhealthy"
-                    footprint_label = "High Impact"
-                
-                fill_percent = min(100, (carbon_value / 10) * 100)
-                
-                html += f'''
-                <div class="city-card {footprint_class}">
-                    <div class="city-title">📍 {city.upper()}</div>
-                    <div class="aqi-value">
-                        <span class="{footprint_class}">{carbon_value}</span>
-                        <span style="font-size: 1rem;">tons CO₂/year</span>
-                    </div>
-                    <div style="text-align: center; font-size: 0.9rem; margin: 5px 0;">{footprint_label}</div>
-                    <div class="aqi-bar">
-                        <div class="aqi-fill {footprint_class}" style="width: {fill_percent}%;"></div>
-                    </div>
-                    <div style="margin-top: 10px; font-size: 0.85rem; text-align: center;">
-                        ▰▰▰▰▰▰▰▰▰▰ {carbon_value}/10 tons
-                    </div>
-                </div>
-                '''
-    
-    html += '</div>'
-    return html
-
-# Function to get or create MCP client
 async def get_mcp_client():
-    """Get the cached MCP client from session state or create a new one"""
     if st.session_state.mcp_client is None and not st.session_state.connection_attempted:
         st.session_state.connection_attempted = True
         mcp_host = os.getenv('MCP_HOST', 'greenmind-mcp-server.onrender.com')
         
-        print(f"Creating new MCP client for host: {mcp_host}")
         try:
             client = MCPClient(host=mcp_host)
             connected = await client.connect()
-            
             if connected:
-                print("MCP client connected successfully")
                 st.session_state.mcp_client = client
                 st.session_state.mcp_connected = True
             else:
-                print("Failed to connect MCP client")
                 st.session_state.mcp_connected = False
         except Exception as e:
-            print(f"Error creating MCP client: {str(e)}")
+            print(f"Error: {str(e)}")
             st.session_state.mcp_connected = False
     
     return st.session_state.mcp_client
 
-# Function to call MCP tool with timeout
 async def call_mcp_tool(tool_name: str, input_text: str):
-    """Call a tool via MCP client using cached connection"""
     client = await get_mcp_client()
     
     if client is None or not st.session_state.mcp_connected:
         return "Error: Could not connect to MCP Server. Make sure it's running."
     
     try:
-        result = await client.call_tool(tool_name, input=input_text)
+        result = await asyncio.wait_for(
+            client.call_tool(tool_name, input=input_text),
+            timeout=90.0
+        )
         return result
+    except asyncio.TimeoutError:
+        return "The server is waking up from inactivity. Please try again in a moment."
     except Exception as e:
-        print(f"Error calling tool: {str(e)}")
-        # Reset client on error
+        print(f"Error: {str(e)}")
         st.session_state.mcp_client = None
         st.session_state.mcp_connected = False
-        return f"Error calling tool: {str(e)}"
+        return f"Error: {str(e)}"
 
-# Clean response function
 def clean_response(text):
-    """Transform raw document text into clean, elegant responses"""
     if not isinstance(text, str):
         return text
-    
     text = re.sub(r'\[\s*Paragraph\s+\d+\s*\]', '', text)
-    text = re.sub(r'H\d+:\s*', '', text)
     text = re.sub(r'TITLE:.*?\n', '', text)
     text = re.sub(r'SOURCE:.*?\n', '', text)
-    text = re.sub(r'SCRAPED:.*?\n', '', text)
-    text = re.sub(r'HEADINGS:.*?(?=CONTENT:|$)', '', text, flags=re.DOTALL)
     text = re.sub(r'CONTENT:', '', text)
-    text = re.sub(r'\[\s*Source:.*?\].*?\n', '', text)
-    text = re.sub(r'https?://\S+', '', text)
-    
-    lines = text.split('\n')
-    relevant_lines = []
-    
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        if any(skip in line.lower() for skip in ['language selection', 'search', 'menu', 'you are here']):
-            continue
-        line = re.sub(r'^\d+\.\s*', '', line)
-        line = re.sub(r'^\*\s*', '', line)
-        line = re.sub(r'\s+', ' ', line)
-        relevant_lines.append(line)
-    
-    text = '\n'.join(relevant_lines)
-    text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)
-    text = re.sub(r' +', ' ', text)
-    
     return text.strip()
 
-# Function to detect if query is asking for comparison
 def is_comparison_query(query):
     query_lower = query.lower()
-    indicators = ['compare', 'comparison', 'versus', 'vs', 'difference between', 'rank', 'ranking']
+    indicators = ['compare', 'comparison', 'versus', 'vs', 'difference between']
     return any(indicator in query_lower for indicator in indicators)
 
-# Function to extract cities from query
 def extract_cities(query):
     query_lower = query.lower()
-    found_cities = []
-    for city in MAJOR_CITIES:
-        if city in query_lower:
-            if city == 'bombay' and 'mumbai' not in found_cities:
-                found_cities.append('mumbai')
-            elif city == 'calcutta' and 'kolkata' not in found_cities:
-                found_cities.append('kolkata')
-            elif city == 'cochin' and 'kochi' not in found_cities:
-                found_cities.append('kochi')
-            elif city == 'trivandrum' and 'thiruvananthapuram' not in found_cities:
-                found_cities.append('thiruvananthapuram')
-            elif city not in found_cities:
-                found_cities.append(city)
-    return found_cities
+    return [city for city in MAJOR_CITIES if city in query_lower]
 
-# Function to handle comparison queries
 async def handle_comparison(query):
     query_lower = query.lower()
     cities = extract_cities(query)
-    
     if not cities:
-        if 'carbon' in query_lower and 'air quality' in query_lower:
-            cities = ['delhi', 'mumbai', 'london', 'new york']
-        elif 'carbon' in query_lower:
-            cities = ['delhi', 'london', 'new york', 'tokyo']
-        elif 'air quality' in query_lower or 'pollution' in query_lower:
-            cities = ['delhi', 'beijing', 'mumbai', 'los angeles']
-        else:
-            cities = ['delhi', 'mumbai', 'london', 'new york']
+        cities = ['delhi', 'mumbai', 'london']
     
     results = {}
-    
-    # Determine which tools to call based on query
     call_carbon = 'carbon' in query_lower or 'footprint' in query_lower
     call_pollution = 'pollution' in query_lower or 'air quality' in query_lower or 'aqi' in query_lower
-    
-    # For city comparisons with "and", call both if relevant
-    if 'and' in query_lower or ',' in query_lower:
-        if 'carbon' in query_lower:
-            call_carbon = True
-        if 'pollution' in query_lower or 'air quality' in query_lower:
-            call_pollution = True
     
     if not call_carbon and not call_pollution:
         call_carbon = True
@@ -609,82 +152,66 @@ async def handle_comparison(query):
     
     return results, cities, call_carbon, call_pollution
 
-# Function to format comparison results with HTML
 def format_comparison_results(results, cities, call_carbon, call_pollution):
-    html = ""
-    
-    if call_pollution:
-        pollution_html = format_comparison_html(results, cities, call_pollution)
-        if pollution_html:
-            html += pollution_html
-    
-    if call_carbon:
-        carbon_html = format_carbon_html(results, cities, call_carbon)
-        if carbon_html:
-            if html:
-                html += "<br>"
-            html += carbon_html
-    
-    if not html:
-        return "No comparison data available."
-    
-    return html
+    output = ["=" * 50, "ENVIRONMENTAL COMPARISON RESULTS", "=" * 50]
+    for city in cities[:3]:
+        output.append(f"\nCITY: {city.upper()}")
+        output.append("-" * 30)
+        if call_pollution and f"aqi_{city}" in results:
+            aqi_text = str(results[f"aqi_{city}"])
+            aqi_match = re.search(r'AQI:\s*(\d+)', aqi_text)
+            if aqi_match:
+                output.append(f"AQI: {aqi_match.group(1)}")
+        if call_carbon and f"carbon_{city}" in results:
+            carbon_text = str(results[f"carbon_{city}"])
+            carbon_match = re.search(r'(\d+\.?\d*)\s*tons', carbon_text)
+            if carbon_match:
+                output.append(f"Carbon Footprint: {carbon_match.group(1)} tons CO2/year")
+    output.append("\n" + "=" * 50)
+    return "\n".join(output)
 
-# Function to process query with MCP
 async def process_with_mcp_async(user_query):
     query_lower = user_query.lower()
     
-    # Check for comparison query first
+    # Comparison query
     if is_comparison_query(user_query) or len(extract_cities(user_query)) >= 2:
-        print("Detected comparison query")
         results, cities, call_carbon, call_pollution = await handle_comparison(user_query)
         if results:
-            formatted = format_comparison_results(results, cities, call_carbon, call_pollution)
-            return formatted, "Comparison_Tool"
+            return format_comparison_results(results, cities, call_carbon, call_pollution), "Comparison_Tool"
     
-    # Improved carbon footprint detection - check for city names
-    carbon_keywords = ['carbon', 'footprint', 'co2', 'emission']
-    city_names = ['delhi', 'mumbai', 'new york', 'london', 'paris', 'tokyo', 'beijing', 
-                  'chicago', 'los angeles', 'san francisco', 'berlin', 'sydney']
+    # Route to appropriate tool based on query
+    if any(word in query_lower for word in ['policy', 'act', 'regulation', 'law', 'agreement', 'treaty']):
+        result = await call_mcp_tool("Environmental_Policies_RAG", user_query)
+        return clean_response(result), "Environmental_Policies_RAG"
     
-    # Check if query has carbon keywords AND city names
-    has_carbon = any(word in query_lower for word in carbon_keywords)
-    has_city = any(city in query_lower for city in city_names)
+    if any(word in query_lower for word in ['effect', 'impact', 'health', 'disease', 'respiratory', 'cancer', 'degradation']):
+        result = await call_mcp_tool("Environmental_Effects_RAG", user_query)
+        return clean_response(result), "Environmental_Effects_RAG"
     
-    if has_carbon and has_city:
-        tool = "Carbon_Footprint_Calculator"
-        print(f"Routing to {tool} for city carbon footprint")
-        result = await call_mcp_tool(tool, user_query)
-        cleaned_result = clean_response(result)
-        return cleaned_result, tool
+    if any(word in query_lower for word in ['search', 'news', 'current', 'recent']):
+        result = await call_mcp_tool("Web_Search", user_query)
+        return result, "Web_Search"
     
-    # Health-related keywords
-    if any(word in query_lower for word in ['cancer', 'health', 'disease', 'respiratory']):
-        tool = "Environmental_Effects_RAG"
-    elif any(word in query_lower for word in ['air quality', 'aqi', 'pollution']):
-        tool = "Pollution_Health_Index"
-    elif any(word in query_lower for word in ['carbon', 'footprint', 'co2']):
-        # Only reach here if no city was detected
-        tool = "Carbon_Footprint_Calculator"
-    elif any(word in query_lower for word in ['policy', 'act', 'regulation', 'law']):
-        tool = "Environmental_Policies_RAG"
-    elif any(word in query_lower for word in ['effect', 'impact', 'climate change']):
-        tool = "Environmental_Effects_RAG"
-    elif any(word in query_lower for word in ['tip', 'advice', 'sustainable']):
-        tool = "Sustainability_Tips"
-    elif any(word in query_lower for word in ['search', 'news', 'current']):
-        tool = "Web_Search"
-    elif any(word in query_lower for word in ['wikipedia']):
-        tool = "Wikipedia_Knowledge"
-    else:
-        tool = "Environmental_Policies_RAG"
+    if any(word in query_lower for word in ['wikipedia']):
+        result = await call_mcp_tool("Wikipedia_Knowledge", user_query)
+        return result, "Wikipedia_Knowledge"
     
-    print(f"Routing to {tool}")
-    result = await call_mcp_tool(tool, user_query)
-    cleaned_result = clean_response(result)
-    return cleaned_result, tool
+    if any(word in query_lower for word in ['air quality', 'aqi', 'pollution index', 'pollution of']):
+        result = await call_mcp_tool("Pollution_Health_Index", user_query)
+        return result, "Pollution_Health_Index"
+    
+    if any(word in query_lower for word in ['carbon', 'footprint', 'co2', 'emission']):
+        result = await call_mcp_tool("Carbon_Footprint_Calculator", user_query)
+        return result, "Carbon_Footprint_Calculator"
+    
+    if any(word in query_lower for word in ['tip', 'advice', 'sustainable']):
+        result = await call_mcp_tool("Sustainability_Tips", user_query)
+        return result, "Sustainability_Tips"
+    
+    # Default to policies RAG
+    result = await call_mcp_tool("Environmental_Policies_RAG", user_query)
+    return clean_response(result), "Environmental_Policies_RAG"
 
-# Wrapper function
 def process_with_mcp(user_query):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -692,7 +219,7 @@ def process_with_mcp(user_query):
     loop.close()
     return result, tool
 
-# Header
+# UI Header
 st.markdown("""
 <div class="main-header">
     <h1>GreenMind</h1>
@@ -702,71 +229,42 @@ st.markdown("""
 
 # Sidebar
 with st.sidebar:
-    st.markdown('<div class="sidebar-content">', unsafe_allow_html=True)
     st.header("About GreenMind")
     st.markdown("""
-    GreenMind is an AI-powered environmental advisor that helps you understand and protect our planet.
-    
-    **Capabilities:**
-    • Environmental policies and regulations
-    • Environmental effects and health impacts
-    • Current environmental news
-    • Pollution and health indices
-    • Carbon footprint calculations
-    • Sustainability tips
-    • City comparisons
+    **Required Tools:**
+    • Environmental Policies RAG
+    • Environmental Effects RAG
+    • Web Search
+    • Pollution Health Index
+    • Carbon Footprint Calculator
+    • Sustainability Tips
+    • City Comparisons
     """)
     
     st.markdown("---")
     st.subheader("MCP Server Status")
-    
-    # Display MCP_HOST from environment
-    mcp_host = os.getenv('MCP_HOST', 'greenmind-mcp-server.onrender.com')
-    st.info(f"MCP Server: {mcp_host}")
-    
-    # Status display only (no test button)
     if st.session_state.mcp_connected:
         st.markdown('<div class="status-box connected">MCP Server Connected</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="status-box disconnected">MCP Server Disconnected</div>', unsafe_allow_html=True)
     
     st.markdown("---")
-    st.subheader("Available Tools")
-    tools_list = [
-        "Environmental_Policies_RAG",
-        "Environmental_Effects_RAG",
-        "Web_Search",
-        "Wikipedia_Knowledge",
-        "Pollution_Health_Index",
-        "Carbon_Footprint_Calculator",
-        "Sustainability_Tips",
-        "Comparison_Tool"
-    ]
-    for tool in tools_list:
-        st.markdown(f'<div class="tool-item">• {tool}</div>', unsafe_allow_html=True)
-    
-    st.markdown("---")
     if st.button("Clear Conversation"):
         st.session_state.messages = [st.session_state.messages[0]]
         st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
-# Display welcome message with quote
-if st.session_state.messages and len(st.session_state.messages) > 0:
+# Display welcome message
+if st.session_state.messages:
     with st.chat_message("assistant"):
-        if 'quote_data' in st.session_state:
-            quote_html = f'''
-            <div class="elegant-quote">
-                <div class="quote-text">{st.session_state.quote_data["text"]}</div>
-                <div class="quote-author">— {st.session_state.quote_data["author"]}</div>
-            </div>
-            '''
-            st.markdown(quote_html, unsafe_allow_html=True)
-        
+        quote_html = f'''
+        <div class="elegant-quote">
+            <div class="quote-text">"{st.session_state.quote_data["text"]}"</div>
+            <div class="quote-author">— {st.session_state.quote_data["author"]}</div>
+        </div>
+        '''
+        st.markdown(quote_html, unsafe_allow_html=True)
         st.markdown(st.session_state.messages[0]["content"])
 
-# Display remaining messages
 for message in st.session_state.messages[1:]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -782,24 +280,15 @@ if prompt:
     with st.chat_message("assistant"):
         with st.spinner("GreenMind is thinking..."):
             response, tool_used = process_with_mcp(prompt)
-            
-            # If the response contains HTML (comparison), use markdown with unsafe_allow_html
-            if response.startswith('<div'):
-                st.markdown(response, unsafe_allow_html=True)
-            else:
-                st.markdown(response)
-            
+            st.markdown(response)
             if tool_used:
-                st.caption(f"Used tool: {tool_used}")
+                st.caption(f"Tool used: {tool_used}")
     
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.rerun()
 
-# Footer
-st.markdown("---")
 st.markdown("""
 <div class="footer">
-    GreenMind - Working towards a sustainable future, one conversation at a time.<br>
-    <small>Remember: Every small action counts towards a greener planet.</small>
+    GreenMind - Working towards a sustainable future, one conversation at a time.
 </div>
 """, unsafe_allow_html=True)
