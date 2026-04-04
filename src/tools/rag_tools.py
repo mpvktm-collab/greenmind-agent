@@ -24,7 +24,8 @@ class PoliciesRAGTool(BaseTool):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.qa_chain = None
+        # Store qa_chain in a private attribute using object.__setattr__
+        object.__setattr__(self, '_qa_chain', None)
         self._initialize()
     
     def _initialize(self):
@@ -38,15 +39,15 @@ class PoliciesRAGTool(BaseTool):
             vector_store = manager.load_or_create_store(store_path, data_path)
             
             if vector_store:
-                self.llm = ChatGoogleGenerativeAI(
+                llm = ChatGoogleGenerativeAI(
                     model=Config.MODEL_NAME,
                     google_api_key=Config.GEMINI_API_KEY,
                     temperature=0.2
                 )
-                self.qa_chain = RetrievalQA.from_chain_type(
-                    llm=self.llm,
+                object.__setattr__(self, '_qa_chain', RetrievalQA.from_chain_type(
+                    llm=llm,
                     retriever=vector_store.as_retriever(search_kwargs={"k": 3})
-                )
+                ))
                 print("PoliciesRAGTool initialized successfully")
             else:
                 print("Warning: Policies vector store not available")
@@ -54,11 +55,12 @@ class PoliciesRAGTool(BaseTool):
             print(f"Error initializing PoliciesRAGTool: {str(e)}")
     
     def _run(self, query: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        if not self.qa_chain:
+        qa_chain = getattr(self, '_qa_chain', None)
+        if not qa_chain:
             return "Environmental policies database is being loaded. Please try again in a moment."
         
         try:
-            result = self.qa_chain.run(query)
+            result = qa_chain.run(query)
             return result
         except Exception as e:
             return f"Error retrieving policies: {str(e)}"
@@ -79,7 +81,7 @@ class EffectsRAGTool(BaseTool):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.qa_chain = None
+        object.__setattr__(self, '_qa_chain', None)
         self._initialize()
     
     def _initialize(self):
@@ -93,15 +95,15 @@ class EffectsRAGTool(BaseTool):
             vector_store = manager.load_or_create_store(store_path, data_path)
             
             if vector_store:
-                self.llm = ChatGoogleGenerativeAI(
+                llm = ChatGoogleGenerativeAI(
                     model=Config.MODEL_NAME,
                     google_api_key=Config.GEMINI_API_KEY,
                     temperature=0.2
                 )
-                self.qa_chain = RetrievalQA.from_chain_type(
-                    llm=self.llm,
+                object.__setattr__(self, '_qa_chain', RetrievalQA.from_chain_type(
+                    llm=llm,
                     retriever=vector_store.as_retriever(search_kwargs={"k": 3})
-                )
+                ))
                 print("EffectsRAGTool initialized successfully")
             else:
                 print("Warning: Effects vector store not available")
@@ -109,11 +111,12 @@ class EffectsRAGTool(BaseTool):
             print(f"Error initializing EffectsRAGTool: {str(e)}")
     
     def _run(self, query: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        if not self.qa_chain:
+        qa_chain = getattr(self, '_qa_chain', None)
+        if not qa_chain:
             return "Environmental effects database is being loaded. Please try again in a moment."
         
         try:
-            result = self.qa_chain.run(query)
+            result = qa_chain.run(query)
             return result
         except Exception as e:
             return f"Error retrieving environmental effects: {str(e)}"
