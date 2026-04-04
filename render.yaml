@@ -6,7 +6,6 @@ services:
     plan: free
     buildCommand: |
       pip install -r requirements-mcp.txt
-      python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
       python build_vector_stores.py
     startCommand: uvicorn greenmind_mcp:app --host 0.0.0.0 --port $PORT
     envVars:
