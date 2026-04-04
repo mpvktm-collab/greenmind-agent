@@ -1,9 +1,10 @@
-# greenmind_mcp.py
+#greenmind_mcp.py
 import os
 import asyncio
 from fastapi import FastAPI
 from pydantic import BaseModel
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.mcp.servers.greenmind_server import GreenMindMCPServer
 from src.mcp.adapters.tool_adapters import create_adapters
@@ -14,36 +15,43 @@ from src.mcp.adapters.tool_adapters import create_adapters
 
 app = FastAPI(title="GreenMind MCP Server")
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Initialize MCP server
 mcp_server = GreenMindMCPServer()
 
-# Register tools with debug output
+# Register tools
+print("=" * 50)
+print("CREATING ADAPTERS")
+print("=" * 50)
+
+adapters = create_adapters()
+
+print(f"\nGot {len(adapters)} adapters from create_adapters()")
 print("=" * 50)
 print("REGISTERING TOOLS")
 print("=" * 50)
 
-try:
-    adapters = create_adapters()
-    print(f"create_adapters() returned {len(adapters) if adapters else 0} adapters")
-    
-    if adapters:
-        for adapter in adapters:
-            print(f"Attempting to register: {adapter.name}")
-            mcp_server.register_tool(
-                adapter.name,
-                adapter.handle,
-                adapter.description
-            )
-            print(f"Registered: {adapter.name}")
-    else:
-        print("No adapters returned from create_adapters()")
-        
-except Exception as e:
-    print(f"Error creating adapters: {str(e)}")
-    import traceback
-    traceback.print_exc()
+for adapter in adapters:
+    try:
+        print(f"Registering: {adapter.name}")
+        mcp_server.register_tool(
+            adapter.name,
+            adapter.handle,
+            adapter.description
+        )
+        print(f"Successfully registered: {adapter.name}")
+    except Exception as e:
+        print(f"Failed to register {adapter.name}: {str(e)}")
 
-print(f"Total tools registered: {len(mcp_server.tools)}")
+print(f"\nTotal tools registered: {len(mcp_server.tools)}")
 print("=" * 50)
 
 

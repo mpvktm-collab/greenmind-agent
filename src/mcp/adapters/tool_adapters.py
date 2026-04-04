@@ -1,12 +1,13 @@
+# src/mcp/adapters/tool_adapters.py
 from src.tools.rag_tools import PoliciesRAGTool, EffectsRAGTool
 from src.tools.web_search import WebSearchTool, WikipediaTool
 from src.tools.pollution_index import PollutionIndexTool
 from src.tools.extra_tools import CarbonFootprintCalculator, SustainabilityTipsTool
 
 class ToolAdapter:
-    def __init__(self, name, handler, description=""):
+    def __init__(self, name, handle, description=""):
         self.name = name
-        self.handler = handler
+        self.handle = handle  # Changed from 'handler' to 'handle'
         self.description = description
 
 def create_adapters():
@@ -18,8 +19,8 @@ def create_adapters():
         policies_tool = PoliciesRAGTool()
         adapters.append(ToolAdapter(
             name="Environmental_Policies_RAG",
-            handler=policies_tool.run,
-            description="Retrieves information about environmental policies, regulations, and acts from various countries. Use this when asked about environmental laws, policies, regulations, or government initiatives."
+            handle=policies_tool._run,  # Use _run method
+            description="Retrieves information about environmental policies, regulations, and acts from various countries."
         ))
         print("Created adapter for Environmental_Policies_RAG")
     except Exception as e:
@@ -29,8 +30,8 @@ def create_adapters():
         effects_tool = EffectsRAGTool()
         adapters.append(ToolAdapter(
             name="Environmental_Effects_RAG",
-            handler=effects_tool.run,
-            description="Provides information about environmental degradation, causes, and its effects on health and ecosystems. Use this when asked about environmental impacts, climate change effects, pollution consequences, or health effects."
+            handle=effects_tool._run,  # Use _run method
+            description="Provides information about environmental degradation, causes, and its effects on health and ecosystems."
         ))
         print("Created adapter for Environmental_Effects_RAG")
     except Exception as e:
@@ -41,8 +42,8 @@ def create_adapters():
         web_tool = WebSearchTool()
         adapters.append(ToolAdapter(
             name="Web_Search",
-            handler=web_tool._run,
-            description="Searches the web for current environmental news and information. Use this for recent developments and current events."
+            handle=web_tool._run,
+            description="Searches the web for current environmental news and information."
         ))
         print("Created adapter for Web_Search")
     except Exception as e:
@@ -52,8 +53,8 @@ def create_adapters():
         wiki_tool = WikipediaTool()
         adapters.append(ToolAdapter(
             name="Wikipedia_Knowledge",
-            handler=wiki_tool._run,
-            description="Searches Wikipedia for environmental topics. Use this for well-known environmental topics and concepts."
+            handle=wiki_tool._run,
+            description="Searches Wikipedia for environmental topics."
         ))
         print("Created adapter for Wikipedia_Knowledge")
     except Exception as e:
@@ -64,8 +65,8 @@ def create_adapters():
         pollution_tool = PollutionIndexTool()
         adapters.append(ToolAdapter(
             name="Pollution_Health_Index",
-            handler=pollution_tool._run,
-            description="Retrieves current pollution levels and environmental health indices for any location. Use this when asked about air quality, pollution levels, or AQI."
+            handle=pollution_tool._run,
+            description="Retrieves current pollution levels and environmental health indices for any location."
         ))
         print("Created adapter for Pollution_Health_Index")
     except Exception as e:
@@ -76,8 +77,8 @@ def create_adapters():
         carbon_tool = CarbonFootprintCalculator()
         adapters.append(ToolAdapter(
             name="Carbon_Footprint_Calculator",
-            handler=carbon_tool._run,
-            description="Provides estimates of carbon footprint for various activities and cities. Use this when asked about carbon footprint of activities like driving, flying, or specific cities."
+            handle=carbon_tool._run,
+            description="Provides estimates of carbon footprint for various activities and cities."
         ))
         print("Created adapter for Carbon_Footprint_Calculator")
     except Exception as e:
@@ -88,8 +89,8 @@ def create_adapters():
         tips_tool = SustainabilityTipsTool()
         adapters.append(ToolAdapter(
             name="Sustainability_Tips",
-            handler=tips_tool._run,
-            description="Provides practical, everyday tips for living more sustainably. Use this when asked for eco-friendly tips, sustainable living advice, or green lifestyle suggestions."
+            handle=tips_tool._run,
+            description="Provides practical, everyday tips for living more sustainably."
         ))
         print("Created adapter for Sustainability_Tips")
     except Exception as e:

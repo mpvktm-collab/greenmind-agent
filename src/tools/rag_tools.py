@@ -2,7 +2,7 @@
 from langchain.chains import RetrievalQA
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.tools import BaseTool
-from typing import Optional
+from typing import Optional, Any
 from langchain.callbacks.manager import CallbackManagerForToolRun
 import sys
 import os
@@ -22,13 +22,14 @@ class PoliciesRAGTool(BaseTool):
     Input should be a specific question about environmental policies.
     """
     
-    return_direct: bool = True
-    
-    def __init__(self):
-        super().__init__()
-        print("Initializing PoliciesRAGTool...")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.qa_chain = None
+        self._initialize()
+    
+    def _initialize(self):
         try:
+            print("Initializing PoliciesRAGTool...")
             manager = VectorStoreManager()
             store_path = os.path.join(Config.VECTOR_STORE_PATH, "policies_store")
             data_path = Config.POLICIES_DIR
@@ -76,13 +77,14 @@ class EffectsRAGTool(BaseTool):
     Input should be a specific question about environmental effects.
     """
     
-    return_direct: bool = True
-    
-    def __init__(self):
-        super().__init__()
-        print("Initializing EffectsRAGTool...")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.qa_chain = None
+        self._initialize()
+    
+    def _initialize(self):
         try:
+            print("Initializing EffectsRAGTool...")
             manager = VectorStoreManager()
             store_path = os.path.join(Config.VECTOR_STORE_PATH, "effects_store")
             data_path = Config.EFFECTS_DIR
