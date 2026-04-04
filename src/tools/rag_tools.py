@@ -1,4 +1,4 @@
-#/src/tools/rag_tools.py
+# src/tools/rag_tools.py
 from langchain.chains import RetrievalQA
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.tools import BaseTool
@@ -28,9 +28,6 @@ class PoliciesRAGTool(BaseTool):
         super().__init__()
         print("Initializing PoliciesRAGTool...")
         self.qa_chain = None
-        self._initialize()
-    
-    def _initialize(self):
         try:
             manager = VectorStoreManager()
             store_path = os.path.join(Config.VECTOR_STORE_PATH, "policies_store")
@@ -85,9 +82,6 @@ class EffectsRAGTool(BaseTool):
         super().__init__()
         print("Initializing EffectsRAGTool...")
         self.qa_chain = None
-        self._initialize()
-    
-    def _initialize(self):
         try:
             manager = VectorStoreManager()
             store_path = os.path.join(Config.VECTOR_STORE_PATH, "effects_store")
