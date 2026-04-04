@@ -14,9 +14,6 @@ __pycache__/
 logs/
 *.log
 
-# Vector stores (will be created on deployment)
-vector_store/
-
 # VS Code
 .vscode/
 
