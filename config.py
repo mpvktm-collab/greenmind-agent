@@ -10,15 +10,26 @@ class Config:
     if not GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY not found in .env file. Please add it.")
     
-    # Updated model names based on available models
-    MODEL_NAME = "models/gemini-2.5-flash"  # Using a stable, fast model
-    EMBEDDING_MODEL = "models/gemini-embedding-001"  # This one is available
+    # Model names
+    MODEL_NAME = "gemini-1.5-flash"
+    EMBEDDING_MODEL = "models/embedding-001"
     TEMPERATURE = 0.7
     
     # Paths
-    VECTOR_STORE_PATH = "./vector_store"
-    LOG_DIRECTORY = "./logs"
-    DATA_DIRECTORY = "./src/data"
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    VECTOR_STORE_PATH = os.path.join(BASE_DIR, "vector_store")
+    LOG_DIRECTORY = os.path.join(BASE_DIR, "logs")
+    DATA_DIRECTORY = os.path.join(BASE_DIR, "src", "data")
+    
+    # ADD THESE MISSING LINES:
+    POLICIES_DIR = os.path.join(DATA_DIRECTORY, "policies")
+    EFFECTS_DIR = os.path.join(DATA_DIRECTORY, "effects")
+    
+    # Create directories if they don't exist
+    os.makedirs(VECTOR_STORE_PATH, exist_ok=True)
+    os.makedirs(LOG_DIRECTORY, exist_ok=True)
+    os.makedirs(POLICIES_DIR, exist_ok=True)
+    os.makedirs(EFFECTS_DIR, exist_ok=True)
     
     # Agent Character - GreenMind's personality
     AGENT_PERSONALITY = """
