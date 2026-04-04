@@ -10,9 +10,9 @@ class Config:
     if not GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY not found in .env file. Please add it.")
     
-    # Model names - UPDATED
+    # Model names - UPDATED with correct embedding model
     MODEL_NAME = "gemini-1.5-flash"
-    EMBEDDING_MODEL = "models/text-embedding-004"  # Updated to current model
+    EMBEDDING_MODEL = "models/gemini-embedding-001"  # Changed from text-embedding-004
     TEMPERATURE = 0.7
     
     # Paths
