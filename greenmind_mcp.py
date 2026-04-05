@@ -5,9 +5,23 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
+import sys
 
-from src.mcp.servers.greenmind_server import GreenMindMCPServer
-from src.mcp.adapters.tool_adapters import create_adapters
+print("Python path:", sys.path)
+
+try:
+    from src.mcp.servers.greenmind_server import GreenMindMCPServer
+    print("Imported GreenMindMCPServer successfully")
+except Exception as e:
+    print(f"Error importing GreenMindMCPServer: {e}")
+    raise
+
+try:
+    from src.mcp.adapters.tool_adapters import create_adapters
+    print("Imported create_adapters successfully")
+except Exception as e:
+    print(f"Error importing create_adapters: {e}")
+    raise
 
 # ------------------------------------------------
 # FastAPI App
@@ -15,7 +29,12 @@ from src.mcp.adapters.tool_adapters import create_adapters
 
 app = FastAPI(title="GreenMind MCP Server")
 
-# Add CORS middleware to allow requests from Streamlit Cloud
+# Simple test endpoint - add this FIRST to test basic connectivity
+@app.get("/ping")
+def ping():
+    return {"pong": "ok", "status": "alive"}
+
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,6 +42,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+print("Starting MCP server initialization...")
 
 # Initialize MCP server
 mcp_server = GreenMindMCPServer()
@@ -32,9 +53,15 @@ print("=" * 50)
 print("CREATING ADAPTERS")
 print("=" * 50)
 
-adapters = create_adapters()
+try:
+    adapters = create_adapters()
+    print(f"Got {len(adapters)} adapters")
+except Exception as e:
+    print(f"Error creating adapters: {e}")
+    import traceback
+    traceback.print_exc()
+    adapters = []
 
-print(f"\nGot {len(adapters)} adapters from create_adapters()")
 print("=" * 50)
 print("REGISTERING TOOLS")
 print("=" * 50)
@@ -51,7 +78,7 @@ for adapter in adapters:
     except Exception as e:
         print(f"Failed to register {adapter.name}: {str(e)}")
 
-print(f"\nTotal tools registered: {len(mcp_server.tools)}")
+print(f"Total tools registered: {len(mcp_server.tools)}")
 print("=" * 50)
 
 
@@ -93,14 +120,13 @@ async def call_tool(req: ToolRequest):
     tool = mcp_server.tools[req.tool]
     
     try:
-        if asyncio.iscoroutinefunction(tool.handler):
-            result = await tool.handler(input=req.input)
-        else:
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None,
-                lambda: tool.handler(input=req.input)
-            )
+        try:
+            result = tool.handler(input=req.input)
+        except TypeError:
+            result = tool.handler(req.input)
+        
+        if asyncio.iscoroutine(result):
+            result = await result
         
         return {"result": result}
     
@@ -115,7 +141,6 @@ async def call_tool(req: ToolRequest):
 
 @app.get("/tools")
 def list_tools():
-    """Return list of all registered tools"""
     return {"tools": list(mcp_server.tools.keys())}
 
 
@@ -125,9 +150,11 @@ def list_tools():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
+    print(f"Starting server on port {port}")
     uvicorn.run(
         "greenmind_mcp:app",
         host="0.0.0.0",
         port=port,
-        reload=False
+        reload=False,
+        log_level="info"
     )
