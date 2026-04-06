@@ -1,3 +1,4 @@
+# src/tools/rag_tools.py
 from langchain.chains import RetrievalQA
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.tools import BaseTool
@@ -5,7 +6,6 @@ from typing import Optional
 from langchain.callbacks.manager import CallbackManagerForToolRun
 import sys
 import os
-import asyncio
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from config import Config
@@ -19,13 +19,11 @@ class PoliciesRAGTool(BaseTool):
     description: str = """
     Retrieves information about environmental policies, regulations, and acts from various countries.
     Use this when asked about environmental laws, policies, regulations, or government initiatives.
-    Input should be a specific question about environmental policies.
     """
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         object.__setattr__(self, '_qa_chain', None)
-        object.__setattr__(self, '_llm', None)
         self._initialize()
     
     def _initialize(self):
@@ -39,15 +37,14 @@ class PoliciesRAGTool(BaseTool):
             vector_store = manager.load_or_create_store(store_path, data_path)
             
             if vector_store:
-                object.__setattr__(self, '_llm', ChatGoogleGenerativeAI(
+                llm = ChatGoogleGenerativeAI(
                     model=Config.MODEL_NAME,
                     google_api_key=Config.GEMINI_API_KEY,
                     temperature=0.2,
-                    convert_system_message_to_human=True,
-                    request_timeout=30  # Add timeout
-                ))
+                    convert_system_message_to_human=True
+                )
                 object.__setattr__(self, '_qa_chain', RetrievalQA.from_chain_type(
-                    llm=self._llm,
+                    llm=llm,
                     retriever=vector_store.as_retriever(search_kwargs={"k": 3})
                 ))
                 print("PoliciesRAGTool initialized successfully")
@@ -62,12 +59,12 @@ class PoliciesRAGTool(BaseTool):
             return "Environmental policies database is being loaded. Please try again in a moment."
         
         try:
-            # Run with a timeout
-            result = qa_chain.run(query)
-            return result
+            # Use invoke instead of run
+            result = qa_chain.invoke({"query": query})
+            if isinstance(result, dict) and "result" in result:
+                return result["result"]
+            return str(result)
         except Exception as e:
-            if "timeout" in str(e).lower():
-                return "The request timed out. Please try a simpler question."
             return f"Error retrieving policies: {str(e)}"
     
     async def _arun(self, query: str) -> str:
@@ -81,13 +78,11 @@ class EffectsRAGTool(BaseTool):
     description: str = """
     Provides information about environmental degradation, causes, and its effects on health and ecosystems.
     Use this when asked about environmental impacts, climate change effects, pollution consequences, or health effects.
-    Input should be a specific question about environmental effects.
     """
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         object.__setattr__(self, '_qa_chain', None)
-        object.__setattr__(self, '_llm', None)
         self._initialize()
     
     def _initialize(self):
@@ -101,15 +96,14 @@ class EffectsRAGTool(BaseTool):
             vector_store = manager.load_or_create_store(store_path, data_path)
             
             if vector_store:
-                object.__setattr__(self, '_llm', ChatGoogleGenerativeAI(
+                llm = ChatGoogleGenerativeAI(
                     model=Config.MODEL_NAME,
                     google_api_key=Config.GEMINI_API_KEY,
                     temperature=0.2,
-                    convert_system_message_to_human=True,
-                    request_timeout=30  # Add timeout
-                ))
+                    convert_system_message_to_human=True
+                )
                 object.__setattr__(self, '_qa_chain', RetrievalQA.from_chain_type(
-                    llm=self._llm,
+                    llm=llm,
                     retriever=vector_store.as_retriever(search_kwargs={"k": 3})
                 ))
                 print("EffectsRAGTool initialized successfully")
@@ -124,11 +118,12 @@ class EffectsRAGTool(BaseTool):
             return "Environmental effects database is being loaded. Please try again in a moment."
         
         try:
-            result = qa_chain.run(query)
-            return result
+            # Use invoke instead of run
+            result = qa_chain.invoke({"query": query})
+            if isinstance(result, dict) and "result" in result:
+                return result["result"]
+            return str(result)
         except Exception as e:
-            if "timeout" in str(e).lower():
-                return "The request timed out. Please try a simpler question."
             return f"Error retrieving environmental effects: {str(e)}"
     
     async def _arun(self, query: str) -> str:
