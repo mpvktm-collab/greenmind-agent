@@ -1,4 +1,3 @@
-# src/tools/rag_tools.py
 from langchain.chains import RetrievalQA
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.tools import BaseTool
@@ -19,7 +18,10 @@ class PoliciesRAGTool(BaseTool):
     description: str = """
     Retrieves information about environmental policies, regulations, and acts from various countries.
     Use this when asked about environmental laws, policies, regulations, or government initiatives.
+    Input should be a specific question about environmental policies.
     """
+    
+    return_direct: bool = True
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -40,12 +42,18 @@ class PoliciesRAGTool(BaseTool):
                 llm = ChatGoogleGenerativeAI(
                     model=Config.MODEL_NAME,
                     google_api_key=Config.GEMINI_API_KEY,
-                    temperature=0.2,
-                    convert_system_message_to_human=True
+                    temperature=0.1,  # Lower temperature for faster responses
+                    convert_system_message_to_human=True,
+                    max_output_tokens=500  # Limit output length for speed
+                )
+                # Use a retriever with fewer documents for speed
+                retriever = vector_store.as_retriever(
+                    search_kwargs={"k": 2}  # Only retrieve 2 documents instead of 3
                 )
                 object.__setattr__(self, '_qa_chain', RetrievalQA.from_chain_type(
                     llm=llm,
-                    retriever=vector_store.as_retriever(search_kwargs={"k": 3})
+                    retriever=retriever,
+                    return_source_documents=False  # Don't return sources - faster
                 ))
                 print("PoliciesRAGTool initialized successfully")
             else:
@@ -59,7 +67,6 @@ class PoliciesRAGTool(BaseTool):
             return "Environmental policies database is being loaded. Please try again in a moment."
         
         try:
-            # Use invoke instead of run
             result = qa_chain.invoke({"query": query})
             if isinstance(result, dict) and "result" in result:
                 return result["result"]
@@ -78,7 +85,10 @@ class EffectsRAGTool(BaseTool):
     description: str = """
     Provides information about environmental degradation, causes, and its effects on health and ecosystems.
     Use this when asked about environmental impacts, climate change effects, pollution consequences, or health effects.
+    Input should be a specific question about environmental effects.
     """
+    
+    return_direct: bool = True
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -99,12 +109,18 @@ class EffectsRAGTool(BaseTool):
                 llm = ChatGoogleGenerativeAI(
                     model=Config.MODEL_NAME,
                     google_api_key=Config.GEMINI_API_KEY,
-                    temperature=0.2,
-                    convert_system_message_to_human=True
+                    temperature=0.1,  # Lower temperature for faster responses
+                    convert_system_message_to_human=True,
+                    max_output_tokens=500  # Limit output length for speed
+                )
+                # Use a retriever with fewer documents for speed
+                retriever = vector_store.as_retriever(
+                    search_kwargs={"k": 2}  # Only retrieve 2 documents instead of 3
                 )
                 object.__setattr__(self, '_qa_chain', RetrievalQA.from_chain_type(
                     llm=llm,
-                    retriever=vector_store.as_retriever(search_kwargs={"k": 3})
+                    retriever=retriever,
+                    return_source_documents=False  # Don't return sources - faster
                 ))
                 print("EffectsRAGTool initialized successfully")
             else:
@@ -118,7 +134,6 @@ class EffectsRAGTool(BaseTool):
             return "Environmental effects database is being loaded. Please try again in a moment."
         
         try:
-            # Use invoke instead of run
             result = qa_chain.invoke({"query": query})
             if isinstance(result, dict) and "result" in result:
                 return result["result"]
