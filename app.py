@@ -1,4 +1,4 @@
-# app.py - Complete version with out-of-domain detection and concise responses
+# app.py - Complete version with typo handling, out-of-domain detection, and concise responses
 import streamlit as st
 import sys
 import os
@@ -32,7 +32,7 @@ st.markdown("""
     .main-header {
         background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
         padding: 1.5rem;
-        border-radius: 10px;
+        border-radius: 8px;
         color: white;
         text-align: center;
         margin-bottom: 2rem;
@@ -53,37 +53,54 @@ st.markdown("""
     .connected { background-color: #d4edda; color: #155724; }
     .disconnected { background-color: #f8d7da; color: #721c24; }
     .footer { text-align: center; color: #666; padding: 1rem; margin-top: 2rem; border-top: 1px solid #e0e0e0; }
+    .stChatMessage { background-color: #ffffff; border-radius: 12px; padding: 12px; margin: 8px 0; border: 1px solid #e0e0e0; }
 </style>
 """, unsafe_allow_html=True)
 
-# Environmental keywords for domain detection
+# Environmental keywords for domain detection (including common typos)
 ENVIRONMENTAL_KEYWORDS = [
-    'environment', 'climate', 'pollution', 'sustainable', 'carbon', 'footprint',
-    'aqi', 'air quality', 'water quality', 'renewable', 'energy', 'recycle',
-    'waste', 'plastic', 'forest', 'biodiversity', 'emission', 'green',
-    'policy', 'regulation', 'act', 'law', 'treaty', 'agreement', 'clean air',
-    'clean water', 'endangered', 'conservation', 'ecological', 'eco-friendly',
-    'solar', 'wind', 'electric vehicle', 'public transport', 'tree', 'plant',
-    'wildlife', 'ocean', 'river', 'waste management', 'carbon footprint',
-    'greenhouse', 'global warming', 'ozone', 'rainforest', 'wildlife'
+    'environment', 'climate', 'pollution', 'polluion', 'polution', 'air quality',
+    'sustainable', 'carbon', 'footprint', 'co2', 'emission', 'aqi',
+    'water quality', 'renewable', 'energy', 'recycle', 'waste', 'plastic',
+    'forest', 'biodiversity', 'green', 'policy', 'regulation', 'act', 'law',
+    'treaty', 'agreement', 'clean air', 'clean water', 'endangered',
+    'conservation', 'eco-friendly', 'solar', 'wind', 'electric vehicle',
+    'public transport', 'tree', 'plant', 'wildlife', 'ocean', 'river',
+    'waste management', 'greenhouse', 'global warming', 'ozone', 'rainforest'
 ]
 
 def is_environmental_query(query):
-    """Check if query is related to environmental sustainability"""
+    """Check if query is related to environmental sustainability with typo tolerance"""
     query_lower = query.lower()
-    # Check for environmental keywords
+    
+    # Direct keyword match
     for keyword in ENVIRONMENTAL_KEYWORDS:
         if keyword in query_lower:
             return True
-    # Check for city + pollution pattern
-    if 'pollution index of' in query_lower or 'aqi of' in query_lower:
+    
+    # Handle pollution-related typos
+    pollution_variations = ['pollution', 'polluion', 'polution', 'polluton', 'pollutin','polusion']
+    for var in pollution_variations:
+        if var in query_lower:
+            return True
+    
+    # Handle "index of [city]" pattern
+    if 'index of' in query_lower:
+        cities = ['delhi', 'mumbai', 'chennai', 'kolkata', 'bangalore', 'new york', 'london', 'tokyo', 'beijing']
+        if any(city in query_lower for city in cities):
+            return True
+    
+    # Handle AQI pattern
+    if 'aqi' in query_lower:
         return True
-    # Check for city + carbon pattern
-    if 'carbon footprint of' in query_lower:
+    
+    # Handle carbon pattern
+    if 'carbon' in query_lower or 'footprint' in query_lower:
         return True
+    
     return False
 
-def get_out_of_domain_response(query):
+def get_out_of_domain_response():
     """Return concise response for out-of-domain queries"""
     return """I specialize in environmental sustainability topics only.
 
@@ -100,10 +117,10 @@ How can I help you with environmental sustainability today?"""
 def get_no_data_response(tool_name):
     """Return concise response when no data is available"""
     responses = {
-        "Environmental_Policies_RAG": "I couldn't find specific policy information for your query. Please try rephrasing or ask about a different policy.",
-        "Environmental_Effects_RAG": "I couldn't find specific environmental effect information. Please try a different question about environmental impacts.",
-        "Web_Search": "No relevant environmental information found. Please try a different search term.",
-        "default": "I couldn't find the information you're looking for. Please try rephrasing your question."
+        "Environmental_Policies_RAG": "No policy information found. Please try a different policy or country.",
+        "Environmental_Effects_RAG": "No environmental effect information found. Please try a different question.",
+        "Web_Search": "No relevant environmental information found. Please try different keywords.",
+        "default": "Information not found. Please try rephrasing your question."
     }
     return responses.get(tool_name, responses["default"])
 
@@ -126,13 +143,12 @@ async def get_mcp_client():
     
     return st.session_state.mcp_client
 
-async def call_mcp_tool(tool_name: str, input_text: str, retry_count: int = 0):
+async def call_mcp_tool(tool_name: str, input_text: str):
     client = await get_mcp_client()
     
     if client is None or not st.session_state.mcp_connected:
         return None, "Connection error"
     
-    # Short timeout for faster response
     timeout_value = 30.0
     
     try:
@@ -140,7 +156,6 @@ async def call_mcp_tool(tool_name: str, input_text: str, retry_count: int = 0):
             client.call_tool(tool_name, input=input_text),
             timeout=timeout_value
         )
-        # Check if result is empty or indicates no results
         if result and isinstance(result, str):
             if "no results" in result.lower() or "not found" in result.lower() or "no web search" in result.lower():
                 return None, "no_data"
@@ -187,7 +202,7 @@ async def handle_comparison(query):
         call_carbon = True
         call_pollution = True
     
-    for city in cities[:2]:  # Limit to 2 cities for speed
+    for city in cities[:2]:
         if call_carbon:
             result, status = await call_mcp_tool("Carbon_Footprint_Calculator", city)
             if status == "success" and result:
@@ -229,7 +244,7 @@ if 'messages' not in st.session_state:
     st.session_state.quote_data = today_quote
     st.session_state.messages = [{
         "role": "assistant",
-        "content": "Hello! I'm GreenMind, your environmental sustainability advisor.\n\nAsk me about:\n• Environmental policies\n• Pollution & air quality\n• Carbon footprint\n• Climate effects\n• Sustainability tips\n\nHow can I help you today?"
+        "content": "Hello! I'm GreenMind, your environmental sustainability advisor.\n\nAsk me about:\n• Environmental policies\n• Pollution & air quality (AQI)\n• Carbon footprint\n• Climate effects\n• Sustainability tips\n\nHow can I help you today?"
     }]
 
 async def process_with_mcp_async(user_query):
@@ -237,7 +252,7 @@ async def process_with_mcp_async(user_query):
     
     # Check if query is environmental
     if not is_environmental_query(user_query):
-        return get_out_of_domain_response(user_query), "OutOfDomain"
+        return get_out_of_domain_response(), "OutOfDomain"
     
     # Comparison query
     if is_comparison_query(user_query) or len(extract_cities(user_query)) >= 2:
@@ -253,8 +268,9 @@ async def process_with_mcp_async(user_query):
             return result, "Carbon_Footprint_Calculator"
         return "Unable to calculate carbon footprint. Please try a specific city or activity.", "Carbon_Footprint_Calculator"
     
-    # Pollution queries
-    if any(word in query_lower for word in ['air quality', 'aqi', 'pollution', 'pollution index']):
+    # Pollution queries (including typos)
+    pollution_indicators = ['air quality', 'aqi', 'pollution', 'polluion', 'polution', 'pollution index']
+    if any(word in query_lower for word in pollution_indicators):
         result, status = await call_mcp_tool("Pollution_Health_Index", user_query)
         if status == "success" and result:
             return result, "Pollution_Health_Index"
@@ -263,19 +279,15 @@ async def process_with_mcp_async(user_query):
     # Policy queries (RAG)
     if any(word in query_lower for word in ['policy', 'act', 'regulation', 'law', 'agreement', 'treaty']):
         result, status = await call_mcp_tool("Environmental_Policies_RAG", user_query)
-        if status == "success" and result:
-            cleaned = clean_response(result)
-            if len(cleaned) > 50:  # Has meaningful content
-                return cleaned, "Environmental_Policies_RAG"
+        if status == "success" and result and len(str(result)) > 50:
+            return clean_response(result), "Environmental_Policies_RAG"
         return get_no_data_response("Environmental_Policies_RAG"), "Environmental_Policies_RAG"
     
     # Effects queries (RAG)
     if any(word in query_lower for word in ['effect', 'impact', 'health', 'disease', 'climate change']):
         result, status = await call_mcp_tool("Environmental_Effects_RAG", user_query)
-        if status == "success" and result:
-            cleaned = clean_response(result)
-            if len(cleaned) > 50:
-                return cleaned, "Environmental_Effects_RAG"
+        if status == "success" and result and len(str(result)) > 50:
+            return clean_response(result), "Environmental_Effects_RAG"
         return get_no_data_response("Environmental_Effects_RAG"), "Environmental_Effects_RAG"
     
     # Tips queries
@@ -283,7 +295,7 @@ async def process_with_mcp_async(user_query):
         result, status = await call_mcp_tool("Sustainability_Tips", user_query)
         if status == "success" and result:
             return result, "Sustainability_Tips"
-        return "Here's a simple tip: Reduce, Reuse, Recycle! Every small action helps our planet.", "Sustainability_Tips"
+        return "Simple tip: Reduce, Reuse, Recycle! Every small action helps our planet.", "Sustainability_Tips"
     
     # Web search fallback
     result, status = await call_mcp_tool("Web_Search", user_query)
@@ -318,6 +330,20 @@ with st.sidebar:
         st.markdown('<div class="status-box connected">Connected</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="status-box disconnected">Connecting...</div>', unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.subheader("Available Tools")
+    tools_list = [
+        "Environmental Policies RAG",
+        "Environmental Effects RAG",
+        "Web Search",
+        "Pollution Health Index",
+        "Carbon Footprint",
+        "Sustainability Tips",
+        "City Comparisons"
+    ]
+    for tool in tools_list:
+        st.markdown(f"• {tool}")
     
     st.markdown("---")
     if st.button("Clear Chat"):
