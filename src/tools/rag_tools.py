@@ -1,8 +1,7 @@
-# src/tools/rag_tools.py
 from langchain.chains import RetrievalQA
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.tools import BaseTool
-from typing import Optional, Any
+from typing import Optional
 from langchain.callbacks.manager import CallbackManagerForToolRun
 import sys
 import os
@@ -24,7 +23,6 @@ class PoliciesRAGTool(BaseTool):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Store qa_chain in a private attribute using object.__setattr__
         object.__setattr__(self, '_qa_chain', None)
         self._initialize()
     
@@ -39,10 +37,12 @@ class PoliciesRAGTool(BaseTool):
             vector_store = manager.load_or_create_store(store_path, data_path)
             
             if vector_store:
+                # FIX: Add convert_system_message_to_human=True
                 llm = ChatGoogleGenerativeAI(
                     model=Config.MODEL_NAME,
                     google_api_key=Config.GEMINI_API_KEY,
-                    temperature=0.2
+                    temperature=0.2,
+                    convert_system_message_to_human=True  # ADD THIS LINE
                 )
                 object.__setattr__(self, '_qa_chain', RetrievalQA.from_chain_type(
                     llm=llm,
@@ -95,10 +95,12 @@ class EffectsRAGTool(BaseTool):
             vector_store = manager.load_or_create_store(store_path, data_path)
             
             if vector_store:
+                # FIX: Add convert_system_message_to_human=True
                 llm = ChatGoogleGenerativeAI(
                     model=Config.MODEL_NAME,
                     google_api_key=Config.GEMINI_API_KEY,
-                    temperature=0.2
+                    temperature=0.2,
+                    convert_system_message_to_human=True  # ADD THIS LINE
                 )
                 object.__setattr__(self, '_qa_chain', RetrievalQA.from_chain_type(
                     llm=llm,

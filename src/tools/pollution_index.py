@@ -1,4 +1,3 @@
-# src/tools/pollution_index.py
 from typing import Optional
 from langchain.tools import BaseTool
 from langchain.callbacks.manager import CallbackManagerForToolRun
@@ -11,15 +10,12 @@ class PollutionIndexTool(BaseTool):
 
     name: str = "Pollution_Health_Index"
     description: str = (
-        "Retrieves current pollution levels and environmental health indices "
-        "for any location. Input should be a location name."
+        "Retrieves pollution index (AQI) and environmental health data "
+        "for a given location."
     )
 
     return_direct: bool = True
 
-    # ---------------------------
-    # AQI CATEGORY
-    # ---------------------------
     def _get_aqi_category(self, aqi):
         if aqi <= 50:
             return "Good", "🟢", "Low health risk"
@@ -34,19 +30,11 @@ class PollutionIndexTool(BaseTool):
         else:
             return "Hazardous", "⚫", "Emergency conditions - avoid outdoors"
 
-    # ---------------------------
-    # VISUAL BAR
-    # ---------------------------
     def _create_visual_bar(self, aqi, max_aqi=300):
         bar_length = 30
-        position = int((aqi / max_aqi) * bar_length)
-        position = min(position, bar_length)
-
+        position = min(int((aqi / max_aqi) * bar_length), bar_length)
         return "█" * position + "░" * (bar_length - position)
 
-    # ---------------------------
-    # AQI CALCULATION
-    # ---------------------------
     def _calculate_aqi_from_location(self, location):
         location = location.lower()
         location_hash = abs(hash(location)) % 1000
@@ -64,9 +52,6 @@ class PollutionIndexTool(BaseTool):
         total = base_aqi + name_factor + metro + industrial + green + coastal + desert + mountain
         return max(15, min(350, total))
 
-    # ---------------------------
-    # POLLUTANT VALUES
-    # ---------------------------
     def _get_consistent_pm_values(self, location, aqi):
         random.seed(hash(location + "_pm") % 10000)
 
@@ -77,9 +62,6 @@ class PollutionIndexTool(BaseTool):
 
         return pm25, pm10, ozone, no2
 
-    # ---------------------------
-    # MAIN EXECUTION
-    # ---------------------------
     def _run(self, location: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         try:
             # Clean input
@@ -91,14 +73,13 @@ class PollutionIndexTool(BaseTool):
                 clean = clean.replace(phrase, "")
 
             clean = clean.replace("?", "").strip()
-
             if not clean:
                 clean = location.strip()
 
             display = clean.upper()
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            # Generate values
+            # Generate AQI data
             aqi = self._calculate_aqi_from_location(clean)
             category, color, advice = self._get_aqi_category(aqi)
             bar = self._create_visual_bar(aqi)
@@ -113,59 +94,50 @@ class PollutionIndexTool(BaseTool):
             tomorrow_cat = self._get_aqi_category(tomorrow)[0]
             day_after_cat = self._get_aqi_category(day_after)[0]
 
-            # ---------------------------
-            # HARD-FORMATTED OUTPUT
-            # ---------------------------
-            return (
-                f"🌍 ENVIRONMENTAL HEALTH INDEX — {display}\n\n"
-                f"🕒 Data retrieved: {timestamp}\n\n"
-                f"----------------------------------------\n\n"
+            # Clean output without extra line separators
+            output = f"""
+========================================
+ENVIRONMENTAL HEALTH INDEX - {display}
+========================================
 
-                f"📊 CURRENT CONDITIONS\n"
-                f"AQI: {aqi} ({category}) {color}\n\n"
-                f"[{bar}] {aqi}/300\n"
-                f"Low → → → → → → → → → → → → → → → → → → → → High\n\n"
+Data retrieved: {timestamp}
 
-                f"----------------------------------------\n\n"
+CURRENT CONDITIONS
+AQI: {aqi} ({category}) {color}
 
-                f"🔬 DETAILED READINGS\n"
-                f"• PM2.5: {pm25} μg/m³ (Safe <25)\n"
-                f"• PM10: {pm10} μg/m³ (Safe <50)\n"
-                f"• Ozone: {ozone} μg/m³ (Safe <50)\n"
-                f"• NO₂: {no2} μg/m³ (Safe <25)\n\n"
+Visual Indicator:
+[{bar}] {aqi}/300
+Low → → → → → → → → → → → → → → → → → → → → High
 
-                f"----------------------------------------\n\n"
+DETAILED READINGS
+PM2.5: {pm25} μg/m³ (Safe: <25)
+PM10:  {pm10} μg/m³ (Safe: <50)
+Ozone: {ozone} μg/m³ (Safe: <50)
+NO2:   {no2} μg/m³ (Safe: <25)
 
-                f"💡 HEALTH RECOMMENDATION\n"
-                f"{advice}\n\n"
+HEALTH RECOMMENDATION
+{advice}
 
-                f"----------------------------------------\n\n"
+FORECAST (Next 3 days)
+Today:     {aqi} ({category})
+Tomorrow:  {tomorrow} ({tomorrow_cat})
+Day After: {day_after} ({day_after_cat})
 
-                f"📅 FORECAST\n"
-                f"• Today: {aqi} ({category})\n"
-                f"• Tomorrow: {tomorrow} ({tomorrow_cat})\n"
-                f"• Day After: {day_after} ({day_after_cat})\n\n"
+AQI REFERENCE
+0-50:     🟢 Good
+51-100:   🟡 Moderate
+101-150:  🟠 Unhealthy for Sensitive Groups
+151-200:  🔴 Unhealthy
+201-300:  🟣 Very Unhealthy
+300+:     ⚫ Hazardous
 
-                f"----------------------------------------\n\n"
+========================================
+"""
 
-                f"📘 AQI REFERENCE\n"
-                f"0–50 🟢 Good\n"
-                f"51–100 🟡 Moderate\n"
-                f"101–150 🟠 Sensitive Groups\n"
-                f"151–200 🔴 Unhealthy\n"
-                f"201–300 🟣 Very Unhealthy\n"
-                f"300+ ⚫ Hazardous\n\n"
-
-                f"----------------------------------------\n\n"
-
-            
-            )
+            return output
 
         except Exception as e:
             return f"Error fetching pollution data: {str(e)}"
 
-    # ---------------------------
-    # ASYNC SUPPORT
-    # ---------------------------
     async def _arun(self, location: str) -> str:
         return self._run(location)
