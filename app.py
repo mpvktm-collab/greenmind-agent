@@ -1,4 +1,4 @@
-# app.py - Complete version with typo handling, out-of-domain detection, and concise responses
+# app.py - Complete version with fixed header, transport tips, and concise layout
 import streamlit as st
 import sys
 import os
@@ -26,34 +26,39 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS - Compact and sticky header
 st.markdown("""
 <style>
     .main-header {
         background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
-        padding: 1.5rem;
-        border-radius: 8px;
+        padding: 0.8rem;
+        border-radius: 10px;
         color: white;
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 999;
     }
-    .main-header h1 { font-size: 2.2rem; margin-bottom: 0.3rem; }
-    .main-header h3 { font-size: 1.2rem; font-weight: 300; font-style: italic; }
+    .main-header h1 { font-size: 1.6rem; margin-bottom: 0; }
+    .main-header h3 { font-size: 0.9rem; font-weight: 300; font-style: italic; margin-bottom: 0; }
     .elegant-quote {
         background: linear-gradient(135deg, #f5f7fa 0%, #e8f0e8 100%);
-        padding: 1.5rem;
-        border-radius: 15px;
-        margin: 1.5rem 0;
+        padding: 0.5rem;
+        border-radius: 10px;
+        margin: 0.5rem 0;
         text-align: center;
-        border-left: 6px solid #2E7D32;
+        border-left: 4px solid #2E7D32;
     }
-    .quote-text { font-size: 1.3rem; font-style: italic; color: #1e3a2e; }
-    .quote-author { font-size: 1rem; color: #4a7850; text-align: right; margin-top: 0.5rem; }
-    .status-box { padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; text-align: center; }
+    .quote-text { font-size: 0.9rem; font-style: italic; color: #1e3a2e; }
+    .quote-author { font-size: 0.7rem; color: #4a7850; text-align: right; margin-top: 0.2rem; }
+    .status-box { padding: 0.5rem; border-radius: 8px; margin-bottom: 0.8rem; text-align: center; font-size: 0.8rem; }
     .connected { background-color: #d4edda; color: #155724; }
     .disconnected { background-color: #f8d7da; color: #721c24; }
-    .footer { text-align: center; color: #666; padding: 1rem; margin-top: 2rem; border-top: 1px solid #e0e0e0; }
-    .stChatMessage { background-color: #ffffff; border-radius: 12px; padding: 12px; margin: 8px 0; border: 1px solid #e0e0e0; }
+    .footer { text-align: center; color: #666; padding: 0.5rem; margin-top: 1rem; border-top: 1px solid #e0e0e0; font-size: 0.7rem; }
+    .stChatMessage { background-color: #ffffff; border-radius: 10px; padding: 8px; margin: 4px 0; border: 1px solid #e0e0e0; }
+    .stChatMessage p { font-size: 0.9rem; margin-bottom: 0.3rem; }
+    hr { margin: 0.5rem 0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -66,61 +71,49 @@ ENVIRONMENTAL_KEYWORDS = [
     'treaty', 'agreement', 'clean air', 'clean water', 'endangered',
     'conservation', 'eco-friendly', 'solar', 'wind', 'electric vehicle',
     'public transport', 'tree', 'plant', 'wildlife', 'ocean', 'river',
-    'waste management', 'greenhouse', 'global warming', 'ozone', 'rainforest'
+    'waste management', 'greenhouse', 'global warming', 'ozone', 'rainforest',
+    'transportation', 'bike', 'walk', 'bus', 'train', 'car', 'vehicle'
 ]
 
 def is_environmental_query(query):
     """Check if query is related to environmental sustainability with typo tolerance"""
     query_lower = query.lower()
     
-    # Direct keyword match
     for keyword in ENVIRONMENTAL_KEYWORDS:
         if keyword in query_lower:
             return True
     
-    # Handle pollution-related typos
-    pollution_variations = ['pollution', 'polluion', 'polution', 'polluton', 'pollutin','polusion']
+    pollution_variations = ['pollution', 'polluion', 'polution', 'polluton', 'pollutin']
     for var in pollution_variations:
         if var in query_lower:
             return True
     
-    # Handle "index of [city]" pattern
     if 'index of' in query_lower:
         cities = ['delhi', 'mumbai', 'chennai', 'kolkata', 'bangalore', 'new york', 'london', 'tokyo', 'beijing']
         if any(city in query_lower for city in cities):
             return True
     
-    # Handle AQI pattern
-    if 'aqi' in query_lower:
-        return True
-    
-    # Handle carbon pattern
-    if 'carbon' in query_lower or 'footprint' in query_lower:
+    if 'aqi' in query_lower or 'carbon' in query_lower or 'footprint' in query_lower:
         return True
     
     return False
 
 def get_out_of_domain_response():
-    """Return concise response for out-of-domain queries"""
-    return """I specialize in environmental sustainability topics only.
+    return """I specialize in environmental topics only.
 
-Please ask me about:
-• Environmental policies and regulations
-• Pollution index and air quality (AQI)
-• Carbon footprint calculations
-• Climate change and environmental effects
-• Sustainability tips and eco-friendly practices
-• Environmental news and current affairs
-
-How can I help you with environmental sustainability today?"""
+Ask me about:
+• Policies & Regulations
+• Pollution Index (AQI)
+• Carbon Footprint
+• Climate Effects
+• Sustainability Tips"""
 
 def get_no_data_response(tool_name):
-    """Return concise response when no data is available"""
     responses = {
-        "Environmental_Policies_RAG": "No policy information found. Please try a different policy or country.",
-        "Environmental_Effects_RAG": "No environmental effect information found. Please try a different question.",
-        "Web_Search": "No relevant environmental information found. Please try different keywords.",
-        "default": "Information not found. Please try rephrasing your question."
+        "Environmental_Policies_RAG": "No policy information found.",
+        "Environmental_Effects_RAG": "No environmental effects found.",
+        "Web_Search": "No relevant information found.",
+        "default": "Information not found. Please rephrase."
     }
     return responses.get(tool_name, responses["default"])
 
@@ -215,7 +208,7 @@ async def handle_comparison(query):
     return results, cities[:2], call_carbon, call_pollution
 
 def format_comparison_results(results, cities, call_carbon, call_pollution):
-    output = ["=" * 40, "COMPARISON RESULTS", "=" * 40]
+    output = ["=" * 35, "COMPARISON", "=" * 35]
     
     for city in cities:
         output.append(f"\n{city.upper()}:")
@@ -228,7 +221,7 @@ def format_comparison_results(results, cities, call_carbon, call_pollution):
             text = str(results[f"carbon_{city}"])
             match = re.search(r'(\d+\.?\d*)\s*tons', text)
             if match:
-                output.append(f"  Carbon: {match.group(1)} tons CO2/year")
+                output.append(f"  Carbon: {match.group(1)} tons")
     
     return "\n".join(output)
 
@@ -236,21 +229,20 @@ def format_comparison_results(results, cities, call_carbon, call_pollution):
 if 'messages' not in st.session_state:
     welcome_quotes = [
         {"text": "The earth is what we all have in common.", "author": "Wendell Berry"},
-        {"text": "We do not inherit the earth from our ancestors; we borrow it from our children.", "author": "Native American Proverb"},
-        {"text": "The greatest threat to our planet is the belief that someone else will save it.", "author": "Robert Swan"}
+        {"text": "We borrow the earth from our children.", "author": "Native American Proverb"},
+        {"text": "The greatest threat is believing someone else will save it.", "author": "Robert Swan"}
     ]
     today_quote = welcome_quotes[datetime.now().day % len(welcome_quotes)]
     
     st.session_state.quote_data = today_quote
     st.session_state.messages = [{
         "role": "assistant",
-        "content": "Hello! I'm GreenMind, your environmental sustainability advisor.\n\nAsk me about:\n• Environmental policies\n• Pollution & air quality (AQI)\n• Carbon footprint\n• Climate effects\n• Sustainability tips\n\nHow can I help you today?"
+        "content": "Hello! I'm GreenMind.\n\nAsk me about:\n• Policies • Pollution (AQI)\n• Carbon Footprint • Climate\n• Sustainability Tips\n\nHow can I help?"
     }]
 
 async def process_with_mcp_async(user_query):
     query_lower = user_query.lower()
     
-    # Check if query is environmental
     if not is_environmental_query(user_query):
         return get_out_of_domain_response(), "OutOfDomain"
     
@@ -259,14 +251,14 @@ async def process_with_mcp_async(user_query):
         results, cities, call_carbon, call_pollution = await handle_comparison(user_query)
         if results:
             return format_comparison_results(results, cities, call_carbon, call_pollution), "Comparison_Tool"
-        return "Unable to compare cities. Please try specific city names.", "Comparison_Tool"
+        return "Unable to compare. Try specific city names.", "Comparison_Tool"
     
     # Carbon footprint queries
     if any(word in query_lower for word in ['carbon', 'footprint', 'co2', 'emission']):
         result, status = await call_mcp_tool("Carbon_Footprint_Calculator", user_query)
         if status == "success" and result:
             return result, "Carbon_Footprint_Calculator"
-        return "Unable to calculate carbon footprint. Please try a specific city or activity.", "Carbon_Footprint_Calculator"
+        return "Unable to calculate carbon footprint.", "Carbon_Footprint_Calculator"
     
     # Pollution queries (including typos)
     pollution_indicators = ['air quality', 'aqi', 'pollution', 'polluion', 'polution', 'pollution index']
@@ -274,7 +266,7 @@ async def process_with_mcp_async(user_query):
         result, status = await call_mcp_tool("Pollution_Health_Index", user_query)
         if status == "success" and result:
             return result, "Pollution_Health_Index"
-        return "Unable to fetch pollution data. Please try a different location.", "Pollution_Health_Index"
+        return "Unable to fetch pollution data.", "Pollution_Health_Index"
     
     # Policy queries (RAG)
     if any(word in query_lower for word in ['policy', 'act', 'regulation', 'law', 'agreement', 'treaty']):
@@ -290,12 +282,17 @@ async def process_with_mcp_async(user_query):
             return clean_response(result), "Environmental_Effects_RAG"
         return get_no_data_response("Environmental_Effects_RAG"), "Environmental_Effects_RAG"
     
-    # Tips queries
+    # Tips queries - with transport routing
     if any(word in query_lower for word in ['tip', 'advice', 'sustainable', 'eco-friendly', 'reduce', 'recycle']):
+        transport_keywords = ['transport', 'transportation', 'bike', 'walk', 'car', 'bus', 'train', 'metro', 'vehicle', 'drive', 'commute', 'eco-friendly transport']
+        if any(word in query_lower for word in transport_keywords):
+            result, status = await call_mcp_tool("Sustainability_Tips", "transport")
+            if status == "success" and result:
+                return result, "Sustainability_Tips"
         result, status = await call_mcp_tool("Sustainability_Tips", user_query)
         if status == "success" and result:
             return result, "Sustainability_Tips"
-        return "Simple tip: Reduce, Reuse, Recycle! Every small action helps our planet.", "Sustainability_Tips"
+        return "Simple tip: Reduce, Reuse, Recycle!", "Sustainability_Tips"
     
     # Web search fallback
     result, status = await call_mcp_tool("Web_Search", user_query)
@@ -321,8 +318,8 @@ st.markdown("""
 
 # Sidebar
 with st.sidebar:
-    st.header("About GreenMind")
-    st.markdown("I answer ONLY environmental sustainability questions.")
+    st.header("About")
+    st.markdown("I answer ONLY environmental questions.")
     
     st.markdown("---")
     st.subheader("Status")
@@ -332,17 +329,9 @@ with st.sidebar:
         st.markdown('<div class="status-box disconnected">Connecting...</div>', unsafe_allow_html=True)
     
     st.markdown("---")
-    st.subheader("Available Tools")
-    tools_list = [
-        "Environmental Policies RAG",
-        "Environmental Effects RAG",
-        "Web Search",
-        "Pollution Health Index",
-        "Carbon Footprint",
-        "Sustainability Tips",
-        "City Comparisons"
-    ]
-    for tool in tools_list:
+    st.subheader("Tools")
+    tools = ["Policies RAG", "Effects RAG", "Web Search", "Pollution Index", "Carbon Footprint", "Tips", "Comparisons"]
+    for tool in tools:
         st.markdown(f"• {tool}")
     
     st.markdown("---")
@@ -388,6 +377,6 @@ if prompt:
 # Footer
 st.markdown("""
 <div class="footer">
-    GreenMind - Every small action counts towards a greener planet.
+    GreenMind - Every small action counts.
 </div>
 """, unsafe_allow_html=True)
