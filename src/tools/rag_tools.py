@@ -5,6 +5,7 @@ from typing import Optional
 from langchain.callbacks.manager import CallbackManagerForToolRun
 import sys
 import os
+import asyncio
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from config import Config
@@ -24,6 +25,7 @@ class PoliciesRAGTool(BaseTool):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         object.__setattr__(self, '_qa_chain', None)
+        object.__setattr__(self, '_llm', None)
         self._initialize()
     
     def _initialize(self):
@@ -37,15 +39,15 @@ class PoliciesRAGTool(BaseTool):
             vector_store = manager.load_or_create_store(store_path, data_path)
             
             if vector_store:
-                # FIX: Add convert_system_message_to_human=True
-                llm = ChatGoogleGenerativeAI(
+                object.__setattr__(self, '_llm', ChatGoogleGenerativeAI(
                     model=Config.MODEL_NAME,
                     google_api_key=Config.GEMINI_API_KEY,
                     temperature=0.2,
-                    convert_system_message_to_human=True  # ADD THIS LINE
-                )
+                    convert_system_message_to_human=True,
+                    request_timeout=30  # Add timeout
+                ))
                 object.__setattr__(self, '_qa_chain', RetrievalQA.from_chain_type(
-                    llm=llm,
+                    llm=self._llm,
                     retriever=vector_store.as_retriever(search_kwargs={"k": 3})
                 ))
                 print("PoliciesRAGTool initialized successfully")
@@ -60,9 +62,12 @@ class PoliciesRAGTool(BaseTool):
             return "Environmental policies database is being loaded. Please try again in a moment."
         
         try:
+            # Run with a timeout
             result = qa_chain.run(query)
             return result
         except Exception as e:
+            if "timeout" in str(e).lower():
+                return "The request timed out. Please try a simpler question."
             return f"Error retrieving policies: {str(e)}"
     
     async def _arun(self, query: str) -> str:
@@ -82,6 +87,7 @@ class EffectsRAGTool(BaseTool):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         object.__setattr__(self, '_qa_chain', None)
+        object.__setattr__(self, '_llm', None)
         self._initialize()
     
     def _initialize(self):
@@ -95,15 +101,15 @@ class EffectsRAGTool(BaseTool):
             vector_store = manager.load_or_create_store(store_path, data_path)
             
             if vector_store:
-                # FIX: Add convert_system_message_to_human=True
-                llm = ChatGoogleGenerativeAI(
+                object.__setattr__(self, '_llm', ChatGoogleGenerativeAI(
                     model=Config.MODEL_NAME,
                     google_api_key=Config.GEMINI_API_KEY,
                     temperature=0.2,
-                    convert_system_message_to_human=True  # ADD THIS LINE
-                )
+                    convert_system_message_to_human=True,
+                    request_timeout=30  # Add timeout
+                ))
                 object.__setattr__(self, '_qa_chain', RetrievalQA.from_chain_type(
-                    llm=llm,
+                    llm=self._llm,
                     retriever=vector_store.as_retriever(search_kwargs={"k": 3})
                 ))
                 print("EffectsRAGTool initialized successfully")
@@ -121,6 +127,8 @@ class EffectsRAGTool(BaseTool):
             result = qa_chain.run(query)
             return result
         except Exception as e:
+            if "timeout" in str(e).lower():
+                return "The request timed out. Please try a simpler question."
             return f"Error retrieving environmental effects: {str(e)}"
     
     async def _arun(self, query: str) -> str:
