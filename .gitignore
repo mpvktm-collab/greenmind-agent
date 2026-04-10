@@ -1,0 +1,66 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+#test files
+app_040426.py
+app_040526.py
+app_040526_2.py
+app_040626_3.py
+app_040626.py
+config_040426.py
+config_040426.py
+config_040526.py
+config_040626.py
+config_040726.py
+debug_import.py
+fix_nullbytes.py
+greenmind_mcp_040426.py
+init_file_create.py
+minimal.py
+render_040926.yaml
+run_test.py
+test_client.py
+test_import_module.py
+test_import.py
+test_minimal.py
+test_path.py
+test_read.py
+test_tool.py
+test_vscode.py
+src/tools/rag_tools_040526_3.py
+src/tools/rag_tools_040526_2.py
+src/toos/rag_tools_040526.py
+src/tools/rag_tools_040426_2.py
+src/tools/rag_tools_040426.py
+src/tools/rag_tools_040626.py
+src/tools/rag_tools_040726.py
+src/tools/extra_tools_040626.py
+src/tools/extra_tools_old.py
+src/tools\pollution_index_040526_2.py
+src/utils/agent_old.py
+src/utils/test-render-build
+mcp/adapters/tool_adapters_0404262.py
+mcp/adapters/tool_adapters_040426_2.py
+mcp/client/mcp_client_040826.py
+mcp/client/test_path.py
+test-render-build

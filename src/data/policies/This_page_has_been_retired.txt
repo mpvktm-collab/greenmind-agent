@@ -1,0 +1,16 @@
+TITLE: This page has been retired
+SOURCE: https://www.eea.europa.eu/policy-documents
+SCRAPED: 2026-03-10T21:14:25.119041
+======================================================================
+
+HEADINGS:
+H1: This page has been retired
+H2: What you can do?
+
+======================================================================
+
+CONTENT:
+
+[Paragraph 1]
+This content was part of our previous website and is no longer available. We've recently upgraded our platform and restructured our content to serve you better.
+

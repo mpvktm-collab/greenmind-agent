@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: greenmind-mcp
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python build_vector_stores.py
+    startCommand: uvicorn greenmind_mcp:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+
+  - type: web
+    name: greenmind-streamlit
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: MCP_HOST
+        value: greenmind-mcp.onrender.com

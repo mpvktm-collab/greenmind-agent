@@ -1,0 +1,18 @@
+TITLE: Page not found
+SOURCE: https://climate.ec.europa.eu/eu-action/climate-strategies-targets/european-green-deal_en
+SCRAPED: 2026-03-10T21:14:18.736854
+======================================================================
+
+HEADINGS:
+H1: Page not found
+
+======================================================================
+
+CONTENT:
+
+[Paragraph 1]
+This site uses cookies. Visit our cookies policy page or click the link in any footer for more information and to change your preferences.
+
+[Paragraph 2]
+The page you requested could not be found. This might have happened because
+

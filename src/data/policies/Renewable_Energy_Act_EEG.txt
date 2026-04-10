@@ -1,0 +1,56 @@
+TITLE: Renewable Energy Act (EEG)
+SOURCE: https://www.wind-energie.de/english/policy/rea/
+SCRAPED: 2026-03-10T21:13:37.968790
+======================================================================
+
+HEADINGS:
+H1: Renewable Energy Act (EEG)
+H2: How the EEG works
+H2: Why we need the EEG
+H2: Success story and major export
+H2: Going forward
+
+======================================================================
+
+CONTENT:
+
+[Paragraph 1]
+The Renewable Energy Act (EEG), one of our most important climate protection tools, is the driver behind the growth of renewables in Germany. It was first enacted in April 2000. Since then, it has been revised several times and adapted to the progress and challenges of the dynamic growth of renewables.
+
+[Paragraph 2]
+Originally, the principle behind the feed-in tariffs in the Renewable Energy Act (EEG) was quite simple: owners of renewable power generators received a fixed rate for each kilowatt-hour of renewable energy over a guaranteed period of 20 years. The rates paid varied, depending on the technology and location.
+
+[Paragraph 3]
+Over the years and due to rapid technological improvements, the rates have been decreasing for systems newly connected to the grid, though the rates remain the same for 20 years once you are connected. The reduction in feed-in tariffs provides an incentive to lower costs in order to make renewables more competitive on the market.
+
+[Paragraph 4]
+In addition to feed-in tariffs, the EEG also stipulates that renewable energies generated and supplied to the grid have feed-in priority, as compared to other, conventional energy sources. To begin with, owners of renewable power plants have a right to an immediate grid connection with priority. Here, grid operators are also obligated to expand and decentralize their grid capacity as needed.
+
+[Paragraph 5]
+Major reforms have been entrenched over the past years. As part of the change from a fixed feed-in-tariff to a system of direct marketing in 2014, wind farm operators market their production directly (or through a direct marketing company). To preserve investment security, wind farm operators receive a market premium to make up the difference between the average monthly spot market price for electricity and the fixed price set in the EEG 2014.
+
+[Paragraph 6]
+In 2017 there was another significant revision of the EEG, bringing about fundamental changes in the support system for wind energy projects. In a first step, a deployment corridor for wind energy was set to ensure a gradual expansion path. Secondly, the funding rates were no longer set by the government with a fixed price in the EEG, but are now being determined by competitive auctions in which the height of funding rates is determined according to respective bid sizes.
+
+[Paragraph 7]
+Renewables require special support because they are not yet cost-competitive with conventional sources of energy, such as coal and nuclear power, which have been subsidized for decades to bring prices down. Furthermore, the price of fossil energy does not contain external costs, such as environmental impacts and carbon emissions. The EEG makes the playing field more level. It takes the positive aspects of renewables – which are carbon-neutral and do not have any hidden social costs or other follow-up costs – into account. As such, it allows for learning curves and economies of scale that help making renewables more cost-efficient.
+
+[Paragraph 8]
+By providing a stable investment environment, the EEG has become a success story and the most efficient policy in paving the way for sustainable energy supply. Electricity funded by feed-in tariffs offsets 72 million tons of carbon dioxide – almost as much as Romania emits per year. During this time, the renewables sector was one of the fastest growing industries in Germany, creating 280,000 jobs, two thirds of which were the result of feed-in tariffs. In the end, it was feed-in tariffs that allowed German firms in the renewables sector to be technology leaders. Today, numerous member states in the European Union have followed the German example and implemented similar feed-in tariffs. Worldwide, more than 50 countries and 25 states/provinces have implemented FITs.
+
+[Paragraph 9]
+Germany has to continue expanding renewable energy if it wants to meet the targets specified in the Paris Agreement of 2015. To this end, the Renewable Energy Act must be retained to ensure the stability of the planning and investment environment for renewables projects.
+
+[Paragraph 10]
+Bundesverband WindEnergie e.V. (BWE)
+EUREF-Campus 16
+10829 Berlin
+
+[Paragraph 11]
+info@wind-energie.de
+Tel. +49 30 212341 210
+Fax +49 30 212341 410
+
+[Paragraph 12]
+Copyright © 2022 BWE | Kontakt | Datenschutz | Impressum | Barrierefreiheit | Newsletter
+

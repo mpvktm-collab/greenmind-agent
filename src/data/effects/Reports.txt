@@ -1,0 +1,22 @@
+TITLE: Reports
+SOURCE: https://www.ipcc.ch/reports/
+SCRAPED: 2026-03-10T21:14:57.570326
+======================================================================
+
+HEADINGS:
+H1: Reports
+H3: The IPCC prepares comprehensive Assessment Reports about knowledge on climate change, its causes, potential impacts and response options. The IPCC also produces Special Reports, which are an assessment on a specific issue and Methodology Reports, which provide practical guidelines for the preparation of greenhouse gas inventories.
+
+======================================================================
+
+CONTENT:
+
+[Paragraph 1]
+There are many ways to engage with the IPCC
+
+[Paragraph 2]
+The Intergovernmental Panel on Climate Change (IPCC) is active socially – choose your network:
+
+[Paragraph 3]
+There are many ways to be involved and participate in the IPCC world.
+

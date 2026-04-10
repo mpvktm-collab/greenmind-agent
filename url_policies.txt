@@ -1,0 +1,12 @@
+# Environmental Policy URLs to Scrape
+# Add one URL per line, lines starting with # are ignored
+
+https://www.wind-energie.de/english/policy/rea/
+https://www.epa.gov/laws-regulations/summary-clean-air-act
+https://ec.europa.eu/clima/policies/eu-climate-action_en
+https://www.bmwk.de/Redaktion/EN/Dossier/renewable-energy.html
+https://www.unep.org/regions/asia-and-pacific/regional-initiatives/supporting-environmental-policy
+https://www.iea.org/policies
+https://climate.ec.europa.eu/eu-action/climate-strategies-targets/european-green-deal_en
+https://www.eea.europa.eu/policy-documents
+https://www.canada.ca/en/environment-climate-change/corporate/transparency/acts-regulations.html
