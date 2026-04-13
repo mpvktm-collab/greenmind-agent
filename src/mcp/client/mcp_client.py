@@ -7,17 +7,23 @@ logger = logging.getLogger(__name__)
 
 class MCPClient:
     """
-    HTTP-based MCP Client for GreenMind
+    HTTP/HTTPS-based MCP Client for GreenMind
     Communicates with the MCP server using REST APIs.
     """
 
     def __init__(self, host: str = "localhost", port: int = 8000):
         """
         Initialize client with server host and port.
+        For localhost, uses http and the given port.
+        For remote hosts (e.g., Render), uses https and no port.
         """
         self.host = host
         self.port = port
-        self.base_url = f"http://{host}:{port}"
+        # If host is not localhost, assume it's a remote Render service (HTTPS)
+        if host != "localhost":
+            self.base_url = f"https://{host}"
+        else:
+            self.base_url = f"http://{host}:{port}"
         self.connected = False
 
     async def connect(self) -> bool:
