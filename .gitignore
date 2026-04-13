@@ -25,8 +25,11 @@ Thumbs.db
 app_040426.py
 app_040526.py
 app_040526_2.py
+app_040626_2.py
 app_040626_3.py
 app_040626.py
+app_041026.py
+app_041126.py
 config_040426.py
 config_040426.py
 config_040526.py
@@ -54,9 +57,13 @@ src/tools/rag_tools_040426_2.py
 src/tools/rag_tools_040426.py
 src/tools/rag_tools_040626.py
 src/tools/rag_tools_040726.py
+src/tools/rag_tools_041126.py
 src/tools/extra_tools_040626.py
+src/tools/extra_tools_041026.py
 src/tools/extra_tools_old.py
-src/tools\pollution_index_040526_2.py
+src/tools/pollution_index_040526_2.py
+src/tools/pollution_index_old.py
+src/tools/web_search_041026.py
 src/utils/agent_old.py
 src/utils/test-render-build
 mcp/adapters/tool_adapters_0404262.py
@@ -64,3 +71,9 @@ mcp/adapters/tool_adapters_040426_2.py
 mcp/client/mcp_client_040826.py
 mcp/client/test_path.py
 test-render-build
+src/mcp/client/mcp_client_041026_2.py
+src/mcp/client/mcp_client_041026.py
+src/mcp/client/test_path.py
+src/mcp/adapters/tool_adapters_040426_2.py
+src/mcp/adapters/tool_adapters_040426.py
+

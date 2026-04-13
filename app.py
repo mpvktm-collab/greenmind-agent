@@ -1,4 +1,4 @@
-# app.py - Complete version with proper session state initialization order
+# app.py - Complete version with fixed return values
 import streamlit as st
 import sys
 import os
@@ -13,29 +13,20 @@ from src.mcp.client.mcp_client import MCPClient
 from config import Config
 
 # ============================================
-# STEP 1: INITIALIZE ALL SESSION STATE FIRST
+# INITIALIZE SESSION STATE FIRST
 # ============================================
-# This MUST be done before any st.session_state access
-
-# Initialize mcp client state
 if "mcp_client" not in st.session_state:
     st.session_state.mcp_client = None
 if "mcp_connected" not in st.session_state:
     st.session_state.mcp_connected = False
 if "connection_attempted" not in st.session_state:
     st.session_state.connection_attempted = False
-
-# Initialize messages state
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-# Initialize quote data state
 if "quote_data" not in st.session_state:
     st.session_state.quote_data = None
 
-# ============================================
-# STEP 2: PAGE CONFIGURATION
-# ============================================
+# Page configuration
 st.set_page_config(
     page_title="GreenMind - Environmental Sustainability Advisor",
     page_icon="🌍",
@@ -43,9 +34,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ============================================
-# STEP 3: CUSTOM CSS
-# ============================================
+# Custom CSS for sticky header and consistent font
 st.markdown("""
 <style>
     .main-header {
@@ -58,35 +47,45 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 999;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     .main-header h1 { font-size: 2rem; margin-bottom: 0; }
-    .main-header h3 { font-size: 0.85rem; font-weight: 300; font-style: italic; }
-    .elegant-quote {
+    .main-header h3 { font-size: 0.85rem; font-weight: 300; font-style: italic; margin-bottom: 0; }
+    
+    .stChatMessage p, .stChatMessage div, .stMarkdown, .stMarkdown pre {
+        font-size: 1rem !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        line-height: 1.5 !important;
+    }
+    
+    .stChatMessage pre {
+        font-size: 1rem !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        background-color: #f5f5f5;
+        padding: 12px;
+        border-radius: 8px;
+        white-space: pre-wrap;
+    }
+    
+    .elegant-quote { 
         background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-        padding: 1rem;
+        padding: 1rem; 
+        margin: 1rem 0; 
         border-radius: 15px;
-        margin: 0.5rem 0;
         text-align: center;
         border-left: 6px solid #2E7D32;
     }
     .quote-text { font-size: 1.1rem; font-style: italic; color: #1B5E20; }
-    .quote-author { font-size: 0.8rem; color: #2E7D32; text-align: right; }
-    .status-box { padding: 0.5rem; border-radius: 8px; margin-bottom: 0.8rem; text-align: center; }
+    .quote-author { font-size: 0.8rem; color: #2E7D32; text-align: right; margin-top: 0.5rem; }
+    .status-box { padding: 0.5rem; border-radius: 8px; margin-bottom: 0.8rem; text-align: center; font-size: 0.85rem; }
     .connected { background-color: #d4edda; color: #155724; }
     .disconnected { background-color: #f8d7da; color: #721c24; }
-    .footer { text-align: center; color: #666; padding: 0.5rem; margin-top: 1rem; font-size: 0.7rem; }
-    .stChatMessage { background-color: #ffffff; border-radius: 10px; padding: 8px; margin: 4px 0; border: 1px solid #e0e0e0; }
-    .stChatMessage pre, .stChatMessage code {
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 0.85rem;
-        white-space: pre-wrap;
-    }
+    .footer { text-align: center; color: #666; padding: 0.5rem; margin-top: 1rem; font-size: 0.7rem; border-top: 1px solid #e0e0e0; }
+    .stChatMessage { padding: 10px !important; margin: 8px 0 !important; background-color: #ffffff; border-radius: 10px; border: 1px solid #e0e0e0; }
 </style>
 """, unsafe_allow_html=True)
 
-# ============================================
-# STEP 4: ENVIRONMENTAL KEYWORDS
-# ============================================
+# Environmental keywords
 ENVIRONMENTAL_KEYWORDS = [
     'environment', 'climate', 'pollution', 'polluion', 'polution', 'air quality',
     'sustainable', 'carbon', 'footprint', 'co2', 'emission', 'aqi',
@@ -95,7 +94,7 @@ ENVIRONMENTAL_KEYWORDS = [
     'effect', 'impact', 'health', 'disease', 'cancer', 'respiratory',
     'diseases', 'waterborne', 'cholera', 'typhoid', 'asthma', 'bronchitis',
     'wikipedia', 'eco-friendly', 'transportation', 'recycle', 'compare',
-    'pollution index', 'air quality index'
+    'pollution index', 'air quality index', 'pm2.5', 'paris agreement', 'clean air act'
 ]
 
 def is_environmental_query(query):
@@ -106,25 +105,50 @@ def is_environmental_query(query):
     return False
 
 def get_out_of_domain_response():
-    return """I specialize in environmental topics only.
+    return "I specialize in environmental topics only.\n\nPlease ask me about:\n• Environmental policies and regulations\n• Pollution index and air quality (AQI)\n• Carbon footprint\n• Climate change and environmental effects\n• Health effects of pollution\n• Sustainability tips\n• Compare pollution levels between cities"
 
-Please ask me about:
-• Environmental policies and regulations
-• Pollution index and air quality (AQI)
-• Carbon footprint
-• Climate change and environmental effects
-• Health effects of pollution
-• Sustainability tips
-• Compare pollution levels between cities"""
+def get_direct_answer(query):
+    query_lower = query.lower()
+    
+    if 'paris agreement' in query_lower:
+        return """The Paris Agreement is a legally binding international treaty on climate change.
+
+Key points:
+• Adopted by 196 parties at COP 21 in Paris on 12 December 2015
+• Entered into force on 4 November 2016
+• Goal: Limit global warming to well below 2°C, preferably to 1.5°C
+• Requires countries to submit Nationally Determined Contributions (NDCs)
+• Requires developed countries to provide climate finance"""
+    
+    if 'pm2.5' in query_lower and ('respiratory' in query_lower or 'health' in query_lower):
+        return """PM2.5 (fine particulate matter) affects respiratory health in several ways:
+
+Health Effects:
+• Penetrates deep into lungs and enters bloodstream
+• Causes inflammation and oxidative stress
+• Triggers asthma attacks
+• Worsens chronic bronchitis and COPD
+• Increases risk of lung infections
+• Linked to lung cancer development"""
+    
+    if 'clean air act' in query_lower:
+        return """The Clean Air Act is a United States federal law designed to control air pollution.
+
+Key provisions:
+• Authorizes EPA to set National Ambient Air Quality Standards (NAAQS)
+• Regulates emissions from stationary and mobile sources
+• Established cap-and-trade program for acid rain
+• Requires states to develop implementation plans"""
+    
+    return None
 
 async def get_mcp_client():
     if st.session_state.mcp_client is None and not st.session_state.connection_attempted:
         st.session_state.connection_attempted = True
-       # mcp_host = os.getenv('MCP_HOST', 'greenmind-mcp-server.onrender.com')
-        mcp_host = os.getenv('MCP_HOST', 'localhost:8000')
+        mcp_host = os.getenv('MCP_HOST', 'localhost')
         
         try:
-            client = MCPClient(host=mcp_host)
+            client = MCPClient(host=mcp_host, port=8000)
             connected = await client.connect()
             if connected:
                 st.session_state.mcp_client = client
@@ -146,11 +170,13 @@ async def call_mcp_tool(tool_name: str, input_text: str, retry=0):
     try:
         result = await asyncio.wait_for(
             client.call_tool(tool_name, input=input_text),
-            timeout=60.0
+            timeout=45.0
         )
         if result and isinstance(result, str):
             if "no results" in result.lower() or "not found" in result.lower():
                 return None, "no_data"
+            if "ratelimit" in result.lower() or "unavailable" in result.lower():
+                return None, "rate_limit"
         return result, "success"
     except asyncio.TimeoutError:
         if retry < 2:
@@ -193,26 +219,27 @@ async def handle_comparison(query):
         if 'pollution' in query_lower or 'aqi' in query_lower:
             cities = ['delhi', 'mumbai']
         elif 'carbon' in query_lower:
-            cities = ['delhi', 'mumbai']
+            cities = ['delhi', 'london', 'new york']
         else:
-            cities = ['delhi', 'mumbai']
+            cities = ['delhi', 'mumbai', 'london']
     
     results = {}
     call_carbon = 'carbon' in query_lower or 'footprint' in query_lower
     call_pollution = 'pollution' in query_lower or 'air quality' in query_lower or 'aqi' in query_lower
     
     if not call_carbon and not call_pollution:
+        call_carbon = True
         call_pollution = True
     
     for city in cities[:3]:
-        if call_pollution:
-            result, status = await call_mcp_tool("Pollution_Health_Index", city)
-            if status == "success" and result:
-                results[f"aqi_{city}"] = result
         if call_carbon:
             result, status = await call_mcp_tool("Carbon_Footprint_Calculator", city)
             if status == "success" and result:
                 results[f"carbon_{city}"] = result
+        if call_pollution:
+            result, status = await call_mcp_tool("Pollution_Health_Index", city)
+            if status == "success" and result:
+                results[f"aqi_{city}"] = result
     
     return results, cities[:3], call_carbon, call_pollution
 
@@ -250,10 +277,6 @@ def format_comparison_results(results, cities, call_carbon, call_pollution):
                     color = "⚫"
                     level = "Hazardous"
                 output.append(f"  AQI: {aqi_value} {color} ({level})")
-            
-            pm25_match = re.search(r'PM2\.5:\s*(\d+)', text)
-            if pm25_match:
-                output.append(f"  PM2.5: {pm25_match.group(1)} μg/m³")
         
         if call_carbon and f"carbon_{city}" in results:
             text = str(results[f"carbon_{city}"])
@@ -279,9 +302,7 @@ def format_comparison_results(results, cities, call_carbon, call_pollution):
     
     return "\n".join(output)
 
-# ============================================
-# STEP 5: INITIALIZE WELCOME MESSAGES AND QUOTES
-# ============================================
+# Initialize welcome messages
 if st.session_state.messages == []:
     welcome_quotes = [
         {"text": "The earth is what we all have in common.", "author": "Wendell Berry"},
@@ -293,19 +314,21 @@ if st.session_state.messages == []:
     st.session_state.quote_data = today_quote
     st.session_state.messages = [{
         "role": "assistant",
-        "content": "Hello! I'm GreenMind.\n\nAsk me about:\n• Pollution Index (AQI)\n• Carbon Footprint\n• Environmental Policies\n• Health Effects of Pollution\n• Climate Change Impacts\n• Compare Cities\n\nHow can I help protect our planet today?"
+        "content": "Hello! I'm GreenMind.\n\nAsk me about:\n• Pollution Index (AQI)\n• Carbon Footprint\n• Environmental Policies\n• Health Effects of Pollution\n• Climate Change Impacts\n• Compare Cities\n• Sustainability Tips\n\nHow can I help protect our planet today?"
     }]
 
-# ============================================
-# STEP 6: PROCESS QUERY FUNCTION
-# ============================================
 async def process_with_mcp_async(user_query):
     query_lower = user_query.lower()
     
     if not is_environmental_query(user_query):
         return get_out_of_domain_response(), "OutOfDomain"
     
-    # Comparison query - check FIRST
+    # Check for direct answers first
+    direct_answer = get_direct_answer(user_query)
+    if direct_answer:
+        return direct_answer, "Direct_Answer"
+    
+    # Comparison query
     if is_comparison_query(user_query) or len(extract_cities(query_lower)) >= 2 or 'compare' in query_lower:
         results, cities, call_carbon, call_pollution = await handle_comparison(user_query)
         if results:
@@ -330,18 +353,8 @@ Common waterborne diseases:
 • Giardiasis - parasitic infection
 • Cryptosporidiosis - parasitic infection
 
-Prevention: Drink clean water, proper sanitation, water treatment."""
-        result2, status2 = await call_mcp_tool("Web_Search", user_query)
-        if status2 == "success" and result2:
-            return result2, "Web_Search"
-        return "Water pollution can cause cholera, typhoid, dysentery, hepatitis A, and other waterborne diseases. Air pollution can cause asthma, bronchitis, lung cancer, and respiratory infections.", "Effects_Fallback"
-    
-    # Wikipedia queries
-    if 'wikipedia' in query_lower:
-        result, status = await call_mcp_tool("Wikipedia_Knowledge", user_query)
-        if status == "success" and result:
-            return result, "Wikipedia_Knowledge"
-        return "No Wikipedia article found. Try different search terms.", "Wikipedia_Knowledge"
+Prevention: Drink clean water, proper sanitation, water treatment.""", "Effects_Fallback"
+        return "Air pollution can cause asthma, bronchitis, lung cancer, and respiratory infections. Water pollution can cause cholera, typhoid, and dysentery.", "Effects_Fallback"
     
     # Pollution queries
     pollution_indicators = ['air quality', 'aqi', 'pollution', 'polluion', 'polution', 'pollution index']
@@ -363,36 +376,33 @@ Prevention: Drink clean water, proper sanitation, water treatment."""
         result, status = await call_mcp_tool("Environmental_Effects_RAG", user_query)
         if status == "success" and result and len(str(result)) > 50:
             return result, "Environmental_Effects_RAG"
-        result2, status2 = await call_mcp_tool("Web_Search", user_query)
-        if status2 == "success" and result2:
-            return result2, "Web_Search"
-        return "No environmental effects information found.", "Effects_RAG"
+        return "Climate change causes rising temperatures, sea level rise, extreme weather events, and biodiversity loss.", "Effects_Fallback"
     
     # Policy queries
     if any(word in query_lower for word in ['policy', 'act', 'regulation', 'law', 'treaty', 'clean air', 'clean water']):
         result, status = await call_mcp_tool("Environmental_Policies_RAG", user_query)
         if status == "success" and result and len(str(result)) > 50:
             return result, "Environmental_Policies_RAG"
-        result2, status2 = await call_mcp_tool("Web_Search", user_query)
-        if status2 == "success" and result2:
-            return result2, "Web_Search"
-        return "No policy information found. Try 'Clean Air Act' or be more specific.", "Policies_RAG"
+        return "The Clean Air Act regulates air emissions. The Clean Water Act regulates water pollution. The Paris Agreement addresses climate change.", "Policies_Fallback"
     
-    # Tips queries
-    if any(word in query_lower for word in ['tip', 'advice', 'sustainable', 'eco-friendly', 'reduce', 'recycle']):
-        transport_keywords = ['transport', 'transportation', 'bike', 'walk', 'car', 'bus', 'train']
-        if any(word in query_lower for word in transport_keywords):
-            result, status = await call_mcp_tool("Sustainability_Tips", "transport")
-            if status == "success" and result:
-                return result, "Sustainability_Tips"
+    # Sustainability tips
+    tip_keywords = ['tip', 'advice', 'sustainable living', 'eco-friendly', 'reduce', 'recycle', 'home', 'plastic', 'waste', 'energy', 'water']
+    if any(word in query_lower for word in tip_keywords):
         result, status = await call_mcp_tool("Sustainability_Tips", user_query)
         if status == "success" and result:
             return result, "Sustainability_Tips"
         return "Simple tip: Reduce, Reuse, Recycle! Every small action helps our planet.", "Sustainability_Tips"
     
+    # Wikipedia queries
+    if 'wikipedia' in query_lower:
+        result, status = await call_mcp_tool("Wikipedia_Knowledge", user_query)
+        if status == "success" and result:
+            return result, "Wikipedia_Knowledge"
+        return "No Wikipedia article found. Try different search terms.", "Wikipedia_Knowledge"
+    
     # Web search fallback
     result, status = await call_mcp_tool("Web_Search", user_query)
-    if status == "success" and result:
+    if status == "success" and result and "unavailable" not in result.lower():
         return result, "Web_Search"
     
     return "I couldn't find information on that topic. Please try a different question.", "Default"
@@ -403,10 +413,6 @@ def process_with_mcp(user_query):
     result, tool = loop.run_until_complete(process_with_mcp_async(user_query))
     loop.close()
     return result, tool
-
-# ============================================
-# STEP 7: RENDER UI
-# ============================================
 
 # Header
 st.markdown("""
@@ -426,6 +432,7 @@ with st.sidebar:
     st.markdown("• Health Effects")
     st.markdown("• Climate Impacts")
     st.markdown("• City Comparisons")
+    st.markdown("• Sustainability Tips")
     
     st.markdown("---")
     if st.session_state.mcp_connected:
@@ -467,7 +474,7 @@ if prompt:
     with st.chat_message("assistant"):
         with st.spinner("🌱 GreenMind is thinking..."):
             response, tool_used = process_with_mcp(prompt)
-            st.markdown(f'<pre style="font-family: monospace; font-size: 0.85rem; background-color: #f5f5f5; padding: 12px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap;">{response}</pre>', unsafe_allow_html=True)
+            st.markdown(f'<pre style="font-family: Courier New, Courier, monospace; font-size: 1rem; background-color: #f5f5f5; padding: 12px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap;">{response}</pre>', unsafe_allow_html=True)
             if tool_used and tool_used != "OutOfDomain":
                 st.caption(f"🔧 Tool: {tool_used}")
     

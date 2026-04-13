@@ -16,7 +16,6 @@ class CarbonFootprintCalculator(BaseTool):
             "mumbai": {"per_capita": 1.8, "main_sources": ["transportation", "commercial", "power plants"], "trend": "increasing", "rank": "moderate"},
             "chennai": {"per_capita": 2.0, "main_sources": ["transportation", "industry", "residential"], "trend": "increasing", "rank": "moderate"},
             "kolkata": {"per_capita": 1.9, "main_sources": ["transportation", "industry", "residential"], "trend": "increasing", "rank": "moderate"},
-            "bangalore": {"per_capita": 2.2, "main_sources": ["transportation", "IT sector", "residential"], "trend": "increasing", "rank": "moderate"},
         }
         for city_name, profile in city_profiles.items():
             if city_name in city_lower:
@@ -25,7 +24,7 @@ class CarbonFootprintCalculator(BaseTool):
     
     def _run(self, activity: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         activity_lower = activity.lower()
-        known_cities = ['delhi', 'mumbai', 'chennai', 'kolkata', 'bangalore']
+        known_cities = ['delhi', 'mumbai', 'chennai', 'kolkata']
         
         for city in known_cities:
             if city in activity_lower:
@@ -70,8 +69,7 @@ Hybrid: 1.5 kg CO2 per 10 km 🟢
 
 ========================================
 Color Reference:
-🟢 Best choice (Electric/Hybrid)
-🟡 Moderate impact (Gasoline)
+🟢 Best choice    🟡 Moderate impact
 ========================================
 """
         
@@ -105,15 +103,16 @@ class SustainabilityTipsTool(BaseTool):
                 "Switch to LED bulbs - 75% less energy 🟢",
                 "Unplug electronics when not in use 🟢",
                 "Use cold water for laundry 🟢",
-                "Air dry clothes instead of dryer 🟢"
+                "Air dry clothes instead of dryer 🟢",
+                "Fix leaky faucets 🟢",
+                "Install low-flow showerheads 🟢"
             ],
             "transport": [
                 "Walk or bike for short trips (under 2 miles) 🟢",
                 "Use public transportation for commuting 🟢",
                 "Carpool with colleagues or neighbors 🟢",
                 "Consider an electric or hybrid vehicle 🟢",
-                "Maintain proper tire pressure 🟡",
-                "Combine errands into one trip 🟡"
+                "Maintain proper tire pressure 🟡"
             ],
             "food": [
                 "Eat locally-grown, seasonal food 🟢",
@@ -131,21 +130,39 @@ class SustainabilityTipsTool(BaseTool):
                 "Plant native trees in your community 🟢",
                 "Support eco-friendly businesses 🟢",
                 "Participate in local clean-up events 🟢",
-                "Calculate your carbon footprint 🟡"
+                "Calculate your carbon footprint 🟡",
+                "Reduce water usage - take shorter showers 🟢",
+                "Use natural cleaning products 🟢"
             ]
         }
         
-        if category not in tips_data:
-            category = "general"
+        # Check for specific categories in the query
+        query_lower = category.lower()
+        if 'home' in query_lower or 'house' in query_lower:
+            category = 'home'
+        elif 'transport' in query_lower or 'car' in query_lower or 'bike' in query_lower:
+            category = 'transport'
+        elif 'food' in query_lower or 'meal' in query_lower or 'diet' in query_lower:
+            category = 'food'
+        elif 'waste' in query_lower or 'recycle' in query_lower or 'plastic' in query_lower:
+            category = 'waste'
+        else:
+            category = 'general'
         
-        output = f"===== {category.upper()} SUSTAINABILITY TIPS =====\n\n"
+        output = f"""
+========================================
+{category.upper()} SUSTAINABILITY TIPS
+========================================
+
+"""
         for i, tip in enumerate(tips_data[category], 1):
             output += f"{i}. {tip}\n"
         
-        output += "\n" + "=" * 40 + "\n"
-        output += "Color Reference: 🟢 Easy/High impact    🟡 Moderate effort\n"
-        output += "=" * 40
-        
+        output += f"""
+========================================
+Color Reference: 🟢 Easy/High impact    🟡 Moderate effort
+========================================
+"""
         return output
     
     async def _arun(self, category: str = "general") -> str:

@@ -9,13 +9,11 @@ google-generativeai==0.3.2
 streamlit==1.29.0
 
 # Vector Databases
-#faiss-cpu==1.7.4
 faiss-cpu
-#faiss-cpu==1.13.2
 chromadb==0.4.22
 
-# Search and Data Sources
-duckduckgo-search==4.1.1
+# Search and Data Sources - UPDATED
+ddgs>=0.1.0
 wikipedia-api==0.6.0
 
 # Document Processing
@@ -35,7 +33,5 @@ plotly==5.18.0
 mcp==1.26.0
 fastapi>=0.104.0
 uvicorn>=0.24.0
-
-#pillow>=11.0.0  # for Python 3.14 compatibility
 
 pydantic

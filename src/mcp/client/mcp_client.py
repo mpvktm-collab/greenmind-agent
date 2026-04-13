@@ -8,18 +8,16 @@ logger = logging.getLogger(__name__)
 class MCPClient:
     """
     HTTP-based MCP Client for GreenMind
-    Communicates with the MCP server deployed on Render using REST APIs.
+    Communicates with the MCP server using REST APIs.
     """
 
-    def __init__(self, host: str):
+    def __init__(self, host: str = "localhost", port: int = 8000):
         """
-        Initialize client with server host.
-
-        Example:
-        host = "greenmind-mcp.onrender.com"
+        Initialize client with server host and port.
         """
         self.host = host
-        self.base_url = f"https://{host}"
+        self.port = port
+        self.base_url = f"http://{host}:{port}"
         self.connected = False
 
     async def connect(self) -> bool:
@@ -27,14 +25,14 @@ class MCPClient:
         Test connection to MCP server.
         """
         try:
-            response = requests.get(self.base_url, timeout=10)
+            response = requests.get(f"{self.base_url}/tools", timeout=10)
 
             if response.status_code == 200:
                 self.connected = True
-                logger.info("Connected to MCP server")
+                logger.info(f"Connected to MCP server at {self.base_url}")
                 return True
             else:
-                logger.error("Server returned non-200 response")
+                logger.error(f"Server returned non-200 response: {response.status_code}")
                 return False
 
         except Exception as e:
@@ -44,7 +42,7 @@ class MCPClient:
 
     async def disconnect(self):
         """
-        Disconnect client (no persistent socket so just reset state).
+        Disconnect client.
         """
         self.connected = False
         logger.info("Disconnected from MCP server")
@@ -52,20 +50,11 @@ class MCPClient:
     async def call_tool(self, tool_name: str, **params):
         """
         Call a tool on the MCP server.
-
-        Example request:
-        POST /call_tool
-        {
-            "tool": "Carbon_Footprint_Calculator",
-            "input": "delhi"
-        }
         """
-
         if not self.connected:
             raise Exception("Client is not connected to MCP server")
 
         try:
-
             payload = {
                 "tool": tool_name,
                 "input": params.get("input", "")
@@ -78,9 +67,7 @@ class MCPClient:
             )
 
             if response.status_code != 200:
-                raise Exception(
-                    f"Server error: HTTP {response.status_code}"
-                )
+                raise Exception(f"Server error: HTTP {response.status_code}")
 
             data = response.json()
 
@@ -95,21 +82,12 @@ class MCPClient:
 
     async def list_tools(self):
         """
-        Optional method to fetch available tools from server.
-        Requires /tools endpoint on server.
+        Fetch available tools from server.
         """
-
         try:
-
-            response = requests.get(
-                f"{self.base_url}/tools",
-                timeout=10
-            )
-
+            response = requests.get(f"{self.base_url}/tools", timeout=10)
             if response.status_code == 200:
                 return response.json()
-
-            return []
-
+            return {"tools": []}
         except Exception:
-            return []
+            return {"tools": []}
