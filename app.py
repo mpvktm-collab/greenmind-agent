@@ -1,4 +1,4 @@
-# app.py - Complete version with fixed return values
+# app.py - Complete version with fixed tips routing 
 import streamlit as st
 import sys
 import os
@@ -34,9 +34,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for sticky header and consistent font
+# Custom CSS for sticky header and improved readability
 st.markdown("""
 <style>
+    /* Sticky header - always visible at top */
     .main-header {
         background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 50%, #4CAF50 100%);
         padding: 1rem;
@@ -49,9 +50,26 @@ st.markdown("""
         z-index: 999;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    .main-header h1 { font-size: 2rem; margin-bottom: 0; }
-    .main-header h3 { font-size: 0.85rem; font-weight: 300; font-style: italic; margin-bottom: 0; }
+    .main-header h1 { 
+        font-size: 2rem; 
+        margin-bottom: 0.2rem; 
+        color: white;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .main-header h3 { 
+        font-size: 0.85rem; 
+        font-weight: 400; 
+        font-style: italic; 
+        margin-bottom: 0;
+        background-color: rgba(0,0,0,0.25);
+        display: inline-block;
+        padding: 0.2rem 1rem;
+        border-radius: 30px;
+        color: #FFFFFF;
+        text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+    }
     
+    /* Consistent font for all outputs */
     .stChatMessage p, .stChatMessage div, .stMarkdown, .stMarkdown pre {
         font-size: 1rem !important;
         font-family: 'Courier New', Courier, monospace !important;
@@ -85,7 +103,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Environmental keywords
+# Environmental keywords (including 'home' and other tip-related terms)
 ENVIRONMENTAL_KEYWORDS = [
     'environment', 'climate', 'pollution', 'polluion', 'polution', 'air quality',
     'sustainable', 'carbon', 'footprint', 'co2', 'emission', 'aqi',
@@ -94,7 +112,8 @@ ENVIRONMENTAL_KEYWORDS = [
     'effect', 'impact', 'health', 'disease', 'cancer', 'respiratory',
     'diseases', 'waterborne', 'cholera', 'typhoid', 'asthma', 'bronchitis',
     'wikipedia', 'eco-friendly', 'transportation', 'recycle', 'compare',
-    'pollution index', 'air quality index', 'pm2.5', 'paris agreement', 'clean air act'
+    'pollution index', 'air quality index', 'pm2.5', 'paris agreement', 'clean air act',
+    'tip', 'advice', 'home', 'house', 'kitchen', 'garden', 'energy', 'water', 'waste'
 ]
 
 def is_environmental_query(query):
@@ -320,10 +339,19 @@ if st.session_state.messages == []:
 async def process_with_mcp_async(user_query):
     query_lower = user_query.lower()
     
+    # FIRST: Check for tips queries (before out-of-domain check)
+    tip_keywords = ['tip', 'advice', 'sustainable', 'eco-friendly', 'home', 'house', 'kitchen', 'garden', 'recycle', 'plastic', 'waste', 'energy', 'water']
+    if any(word in query_lower for word in tip_keywords):
+        result, status = await call_mcp_tool("Sustainability_Tips", user_query)
+        if status == "success" and result:
+            return result, "Sustainability_Tips"
+        return "Simple tip: Reduce, Reuse, Recycle! Every small action helps our planet.", "Sustainability_Tips"
+    
+    # THEN check if query is environmental
     if not is_environmental_query(user_query):
         return get_out_of_domain_response(), "OutOfDomain"
     
-    # Check for direct answers first
+    # Check for direct answers
     direct_answer = get_direct_answer(user_query)
     if direct_answer:
         return direct_answer, "Direct_Answer"
@@ -385,14 +413,6 @@ Prevention: Drink clean water, proper sanitation, water treatment.""", "Effects_
             return result, "Environmental_Policies_RAG"
         return "The Clean Air Act regulates air emissions. The Clean Water Act regulates water pollution. The Paris Agreement addresses climate change.", "Policies_Fallback"
     
-    # Sustainability tips
-    tip_keywords = ['tip', 'advice', 'sustainable living', 'eco-friendly', 'reduce', 'recycle', 'home', 'plastic', 'waste', 'energy', 'water']
-    if any(word in query_lower for word in tip_keywords):
-        result, status = await call_mcp_tool("Sustainability_Tips", user_query)
-        if status == "success" and result:
-            return result, "Sustainability_Tips"
-        return "Simple tip: Reduce, Reuse, Recycle! Every small action helps our planet.", "Sustainability_Tips"
-    
     # Wikipedia queries
     if 'wikipedia' in query_lower:
         result, status = await call_mcp_tool("Wikipedia_Knowledge", user_query)
@@ -414,7 +434,7 @@ def process_with_mcp(user_query):
     loop.close()
     return result, tool
 
-# Header
+# Header - Sticky with improved readability
 st.markdown("""
 <div class="main-header">
     <h1>🌿 GreenMind 🌍</h1>
