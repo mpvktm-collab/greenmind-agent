@@ -1,4 +1,4 @@
-# app.py - Complete version with fixed tips routing 
+# app.py - Stable version with header readability fix
 import streamlit as st
 import sys
 import os
@@ -56,6 +56,7 @@ st.markdown("""
         color: white;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
+    /* Improved subtitle readability */
     .main-header h3 { 
         font-size: 0.85rem; 
         font-weight: 400; 
@@ -164,10 +165,10 @@ Key provisions:
 async def get_mcp_client():
     if st.session_state.mcp_client is None and not st.session_state.connection_attempted:
         st.session_state.connection_attempted = True
-        mcp_host = os.getenv('MCP_HOST', 'localhost')
+        mcp_host = os.getenv('MCP_HOST', 'greenmind-agent.onrender.com')
         
         try:
-            client = MCPClient(host=mcp_host, port=8000)
+            client = MCPClient(host=mcp_host, port=443)
             connected = await client.connect()
             if connected:
                 st.session_state.mcp_client = client
