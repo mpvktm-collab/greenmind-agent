@@ -1,16 +1,17 @@
-# app.py - Final version for stable backend
+# app.py - Final version with robust connection handling and consistent font
 import streamlit as st
 import sys
 import os
 import asyncio
 import re
+import time
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from src.mcp.client.mcp_client import MCPClient
 from config import Config
 
-# ---------- Session state initialization ----------
+# ---------- Session state ----------
 if "mcp_client" not in st.session_state:
     st.session_state.mcp_client = None
 if "mcp_connected" not in st.session_state:
@@ -29,7 +30,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- CSS (sticky header, consistent font) ----------
+# ---------- CSS (sticky header) ----------
 st.markdown("""
 <style>
     .main-header {
@@ -48,16 +49,6 @@ st.markdown("""
         margin-bottom: 0.2rem;
         color: white;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    }
-    /* Subtitle style also applied inline for safety */
-    .stChatMessage pre, .stChatMessage code, .stMarkdown pre {
-        font-family: 'Courier New', Courier, monospace !important;
-        font-size: 1rem !important;
-        background-color: #f5f5f5 !important;
-        padding: 12px !important;
-        border-radius: 8px !important;
-        white-space: pre-wrap !important;
-        border: 1px solid #e0e0e0 !important;
     }
     .elegant-quote {
         background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
@@ -126,7 +117,7 @@ Key provisions:
 • First passed 1963, amended 1970, 1977, 1990"""
     return None
 
-# ---------- MCP client (uses HTTPS for remote host) ----------
+# ---------- MCP client with automatic reconnection ----------
 async def get_mcp_client():
     if st.session_state.mcp_client is None and not st.session_state.connection_attempted:
         st.session_state.connection_attempted = True
@@ -140,14 +131,20 @@ async def get_mcp_client():
             else:
                 st.session_state.mcp_connected = False
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error creating client: {e}")
             st.session_state.mcp_connected = False
     return st.session_state.mcp_client
 
 async def call_mcp_tool(tool_name: str, input_text: str, retry=0):
     client = await get_mcp_client()
     if client is None or not st.session_state.mcp_connected:
-        return None, "Connection error"
+        # Try to reconnect
+        st.session_state.mcp_client = None
+        st.session_state.connection_attempted = False
+        client = await get_mcp_client()
+        if client is None or not st.session_state.mcp_connected:
+            return None, "Connection error"
+
     try:
         result = await asyncio.wait_for(
             client.call_tool(tool_name, input=input_text),
@@ -159,13 +156,15 @@ async def call_mcp_tool(tool_name: str, input_text: str, retry=0):
             if "ratelimit" in result.lower() or "unavailable" in result.lower():
                 return None, "rate_limit"
         return result, "success"
-    except asyncio.TimeoutError:
-        if retry < 2:
-            await asyncio.sleep(2)
-            return await call_mcp_tool(tool_name, input_text, retry+1)
-        return None, "timeout"
-    except Exception as e:
-        return None, str(e)
+    except (asyncio.TimeoutError, Exception) as e:
+        # If the call fails, reset the client and retry once
+        if retry == 0:
+            st.session_state.mcp_client = None
+            st.session_state.mcp_connected = False
+            st.session_state.connection_attempted = False
+            await asyncio.sleep(1)
+            return await call_mcp_tool(tool_name, input_text, retry=1)
+        return None, f"Call failed: {str(e)}"
 
 def clean_response(text):
     if not isinstance(text, str):
@@ -225,7 +224,7 @@ def format_comparison_results(results, cities, call_carbon, call_pollution):
     out.extend(["\n"+"="*50, "Color Reference: 🟢 Good/Low   🟡 Moderate   🟠 Sensitive   🔴 Unhealthy   🟣 Very Unhealthy   ⚫ Hazardous"])
     return "\n".join(out)
 
-# ---------- Welcome message and quote ----------
+# ---------- Welcome message ----------
 if st.session_state.messages == []:
     quotes = [
         {"text": "The earth is what we all have in common.", "author": "Wendell Berry"},
@@ -254,7 +253,7 @@ async def process_with_mcp_async(user_query):
     if not is_environmental_query(user_query):
         return get_out_of_domain_response(), "OutOfDomain"
 
-    # 3. Direct answers for known policies
+    # 3. Direct answers (bypass RAG)
     direct = get_direct_answer(user_query)
     if direct:
         return direct, "Direct"
@@ -289,7 +288,7 @@ async def process_with_mcp_async(user_query):
             return res, "Carbon"
         return "Unable to calculate carbon footprint. Try a specific city like 'Delhi'.", "Carbon"
 
-    # 8. Other effects (climate change, deforestation)
+    # 8. Other effects
     if any(w in ql for w in ['effect','impact','climate change','global warming','deforestation']):
         res, stat = await call_mcp_tool("Environmental_Effects_RAG", user_query)
         if stat == "success" and res and len(res)>50:
@@ -314,7 +313,7 @@ async def process_with_mcp_async(user_query):
             return res, "Wikipedia"
         return "No Wikipedia article found. Try different terms.", "Wikipedia"
 
-    # 11. Web search (general)
+    # 11. Web search fallback
     res, stat = await call_mcp_tool("Web_Search", user_query)
     if stat == "success" and res and "unavailable" not in res.lower():
         return res, "Web_Search"
@@ -329,7 +328,6 @@ def process_with_mcp(query):
     return result, tool
 
 # ---------- UI ----------
-# Header with inline style for guaranteed readability
 st.markdown("""
 <div class="main-header">
     <h1>🌿 GreenMind 🌍</h1>
@@ -350,7 +348,6 @@ with st.sidebar:
         st.session_state.messages = [st.session_state.messages[0]]
         st.rerun()
 
-# Show welcome message
 if st.session_state.messages:
     with st.chat_message("assistant"):
         if st.session_state.quote_data:
@@ -369,8 +366,13 @@ if prompt:
     with st.chat_message("assistant"):
         with st.spinner("🌱 GreenMind is thinking..."):
             response, tool = process_with_mcp(prompt)
-            # Wrap every response in a monospace <pre> for consistent font
-            st.markdown(f'<pre style="font-family: \'Courier New\', Courier, monospace; font-size: 1rem; background-color: #f5f5f5; padding: 12px; border-radius: 8px; white-space: pre-wrap;">{response}</pre>', unsafe_allow_html=True)
+            # Force monospace font with !important for every response
+            st.markdown(
+                f'<pre style="font-family: \'Courier New\', Courier, monospace !important; '
+                f'font-size: 1rem !important; background-color: #f5f5f5; padding: 12px; '
+                f'border-radius: 8px; white-space: pre-wrap;">{response}</pre>',
+                unsafe_allow_html=True
+            )
             if tool and tool not in ("OutOfDomain","Default"):
                 st.caption(f"🔧 Tool: {tool}")
     st.session_state.messages.append({"role": "assistant", "content": response})
