@@ -1,10 +1,9 @@
-# app.py - Final version with robust connection handling and consistent font
+# app.py - Final, fully corrected frontend
 import streamlit as st
 import sys
 import os
 import asyncio
 import re
-import time
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -30,7 +29,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- CSS (sticky header) ----------
+# ---------- CSS (sticky header only) ----------
 st.markdown("""
 <style>
     .main-header {
@@ -117,7 +116,7 @@ Key provisions:
 • First passed 1963, amended 1970, 1977, 1990"""
     return None
 
-# ---------- MCP client with automatic reconnection ----------
+# ---------- MCP client (with automatic reconnection) ----------
 async def get_mcp_client():
     if st.session_state.mcp_client is None and not st.session_state.connection_attempted:
         st.session_state.connection_attempted = True
@@ -131,7 +130,7 @@ async def get_mcp_client():
             else:
                 st.session_state.mcp_connected = False
         except Exception as e:
-            print(f"Error creating client: {e}")
+            print(f"Error: {e}")
             st.session_state.mcp_connected = False
     return st.session_state.mcp_client
 
@@ -157,7 +156,6 @@ async def call_mcp_tool(tool_name: str, input_text: str, retry=0):
                 return None, "rate_limit"
         return result, "success"
     except (asyncio.TimeoutError, Exception) as e:
-        # If the call fails, reset the client and retry once
         if retry == 0:
             st.session_state.mcp_client = None
             st.session_state.mcp_connected = False
@@ -204,24 +202,24 @@ async def handle_comparison(query):
     return results, cities[:3], call_carbon, call_pollution
 
 def format_comparison_results(results, cities, call_carbon, call_pollution):
-    out = ["="*50, "ENVIRONMENTAL COMPARISON RESULTS", "="*50]
+    out = ["=" * 50, "ENVIRONMENTAL COMPARISON RESULTS", "=" * 50]
     for city in cities:
-        out.append(f"\n📍 {city.upper()}\n" + "-"*30)
+        out.append(f"\n📍 {city.upper()}\n" + "-" * 30)
         if call_pollution and f"aqi_{city}" in results:
             txt = results[f"aqi_{city}"]
             m = re.search(r'AQI:\s*(\d+)', txt)
             if m:
                 aqi = int(m.group(1))
-                color = "🟢" if aqi<=50 else "🟡" if aqi<=100 else "🟠" if aqi<=150 else "🔴" if aqi<=200 else "🟣" if aqi<=300 else "⚫"
+                color = "🟢" if aqi <= 50 else "🟡" if aqi <= 100 else "🟠" if aqi <= 150 else "🔴" if aqi <= 200 else "🟣" if aqi <= 300 else "⚫"
                 out.append(f"  AQI: {aqi} {color}")
         if call_carbon and f"carbon_{city}" in results:
             txt = results[f"carbon_{city}"]
             m = re.search(r'(\d+\.?\d*)\s*tons', txt)
             if m:
                 val = float(m.group(1))
-                color = "🟢" if val<=2.0 else "🟡" if val<=5.0 else "🔴"
+                color = "🟢" if val <= 2.0 else "🟡" if val <= 5.0 else "🔴"
                 out.append(f"  Carbon: {val} tons CO2/year {color}")
-    out.extend(["\n"+"="*50, "Color Reference: 🟢 Good/Low   🟡 Moderate   🟠 Sensitive   🔴 Unhealthy   🟣 Very Unhealthy   ⚫ Hazardous"])
+    out.extend(["\n" + "=" * 50, "Color Reference: 🟢 Good/Low   🟡 Moderate   🟠 Sensitive   🔴 Unhealthy   🟣 Very Unhealthy   ⚫ Hazardous"])
     return "\n".join(out)
 
 # ---------- Welcome message ----------
@@ -237,68 +235,70 @@ if st.session_state.messages == []:
         "content": "Hello! I'm GreenMind.\n\nAsk me about:\n• Pollution Index (AQI)\n• Carbon Footprint\n• Environmental Policies\n• Health Effects\n• Climate Impacts\n• Compare Cities\n• Sustainability Tips\n\nHow can I help protect our planet today?"
     }]
 
-# ---------- Main processing ----------
+# ---------- Main processing (correct order) ----------
 async def process_with_mcp_async(user_query):
     ql = user_query.lower()
 
-    # 1. Tips (always allowed)
-    tip_keywords = ['tip','advice','sustainable','eco-friendly','home','house','kitchen','garden','recycle','plastic','waste','energy','water']
+    # 1. TIPS – must be FIRST (before domain check)
+    tip_keywords = ['tip', 'advice', 'sustainable', 'eco-friendly', 'home', 'house', 'kitchen',
+                    'garden', 'recycle', 'plastic', 'waste', 'energy', 'water']
     if any(w in ql for w in tip_keywords):
         res, stat = await call_mcp_tool("Sustainability_Tips", user_query)
         if stat == "success" and res:
             return res, "Tips"
         return "Simple tip: Reduce, Reuse, Recycle! Every small action helps.", "Tips"
 
-    # 2. Domain check
-    if not is_environmental_query(user_query):
-        return get_out_of_domain_response(), "OutOfDomain"
-
-    # 3. Direct answers (bypass RAG)
+    # 2. DIRECT ANSWERS (Paris Agreement, etc.)
     direct = get_direct_answer(user_query)
     if direct:
         return direct, "Direct"
 
-    # 4. Comparison
+    # 3. DOMAIN CHECK
+    if not is_environmental_query(user_query):
+        return get_out_of_domain_response(), "OutOfDomain"
+
+    # 4. COMPARISON
     if is_comparison_query(user_query) or len(extract_cities(user_query)) >= 2 or 'compare' in ql:
         results, cities, cc, cp = await handle_comparison(user_query)
         if results:
             return format_comparison_results(results, cities, cc, cp), "Comparison"
         return "Unable to compare. Try 'compare pollution in Delhi and Mumbai'.", "Comparison"
 
-    # 5. Disease/health
-    if any(w in ql for w in ['disease','health','cancer','respiratory','asthma','bronchitis','cholera','typhoid','waterborne']):
+    # 5. DISEASE / HEALTH
+    if any(w in ql for w in ['disease', 'health', 'cancer', 'respiratory', 'asthma', 'bronchitis',
+                             'cholera', 'typhoid', 'waterborne', 'illness', 'sick', 'diseases']):
         res, stat = await call_mcp_tool("Environmental_Effects_RAG", user_query)
-        if stat == "success" and res and len(res)>50:
+        if stat == "success" and res and len(res) > 50:
             return res, "Effects_RAG"
         if 'water' in ql and 'pollution' in ql:
             return "Water pollution causes cholera, typhoid, dysentery, hepatitis A, giardiasis.\nPrevention: clean water, sanitation.", "Effects_Fallback"
         return "Air pollution can cause asthma, bronchitis, lung cancer. Water pollution causes cholera, typhoid, dysentery.", "Effects_Fallback"
 
-    # 6. Pollution index
-    if any(w in ql for w in ['air quality','aqi','pollution','polluion','polution','pollution index']):
+    # 6. POLLUTION INDEX
+    if any(w in ql for w in ['air quality', 'aqi', 'pollution', 'polluion', 'polution', 'pollution index']):
         res, stat = await call_mcp_tool("Pollution_Health_Index", user_query)
         if stat == "success" and res:
             return res, "Pollution"
         return "Unable to fetch pollution data. Please try a different location.", "Pollution"
 
-    # 7. Carbon footprint
-    if any(w in ql for w in ['carbon','footprint','co2','emission']):
+    # 7. CARBON FOOTPRINT
+    if any(w in ql for w in ['carbon', 'footprint', 'co2', 'emission']):
         res, stat = await call_mcp_tool("Carbon_Footprint_Calculator", user_query)
         if stat == "success" and res:
             return res, "Carbon"
         return "Unable to calculate carbon footprint. Try a specific city like 'Delhi'.", "Carbon"
 
-    # 8. Other effects
-    if any(w in ql for w in ['effect','impact','climate change','global warming','deforestation']):
+    # 8. OTHER EFFECTS (climate change, deforestation)
+    if any(w in ql for w in ['effect', 'impact', 'climate change', 'global warming', 'deforestation']):
         res, stat = await call_mcp_tool("Environmental_Effects_RAG", user_query)
-        if stat == "success" and res and len(res)>50:
+        if stat == "success" and res and len(res) > 50:
             return res, "Effects_RAG"
         return "Climate change causes rising temperatures, sea level rise, extreme weather, biodiversity loss. Deforestation releases CO2 and reduces carbon sinks.", "Effects_Fallback"
 
-    # 9. Policies (RAG with fallback to web search)
-    if any(w in ql for w in ['policy','act','regulation','law','treaty','clean air','clean water']):
+    # 9. POLICIES (RAG with fallback to web search)
+    if any(w in ql for w in ['policy', 'act', 'regulation', 'law', 'treaty', 'clean air', 'clean water']):
         res, stat = await call_mcp_tool("Environmental_Policies_RAG", user_query)
-        if stat == "success" and res and len(res)>50:
+        if stat == "success" and res and len(res) > 50:
             return res, "Policies_RAG"
         # fallback to web search
         res2, stat2 = await call_mcp_tool("Web_Search", user_query)
@@ -306,14 +306,14 @@ async def process_with_mcp_async(user_query):
             return res2, "Web_Search"
         return "No policy information found. Try a more specific query (e.g., 'Paris Agreement goals').", "Policies_Fallback"
 
-    # 10. Wikipedia
+    # 10. WIKIPEDIA
     if 'wikipedia' in ql:
         res, stat = await call_mcp_tool("Wikipedia_Knowledge", user_query)
         if stat == "success" and res:
             return res, "Wikipedia"
         return "No Wikipedia article found. Try different terms.", "Wikipedia"
 
-    # 11. Web search fallback
+    # 11. WEB SEARCH (general)
     res, stat = await call_mcp_tool("Web_Search", user_query)
     if stat == "success" and res and "unavailable" not in res.lower():
         return res, "Web_Search"
@@ -366,14 +366,14 @@ if prompt:
     with st.chat_message("assistant"):
         with st.spinner("🌱 GreenMind is thinking..."):
             response, tool = process_with_mcp(prompt)
-            # Force monospace font with !important for every response
+            # Force consistent monospace font for every response
             st.markdown(
                 f'<pre style="font-family: \'Courier New\', Courier, monospace !important; '
                 f'font-size: 1rem !important; background-color: #f5f5f5; padding: 12px; '
                 f'border-radius: 8px; white-space: pre-wrap;">{response}</pre>',
                 unsafe_allow_html=True
             )
-            if tool and tool not in ("OutOfDomain","Default"):
+            if tool and tool not in ("OutOfDomain", "Default"):
                 st.caption(f"🔧 Tool: {tool}")
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.rerun()
