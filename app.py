@@ -1,4 +1,4 @@
-# app.py - Final version for stable backend (commit 5b0f18d)
+# app.py - Final version for stable backend
 import streamlit as st
 import sys
 import os
@@ -49,7 +49,7 @@ st.markdown("""
         color: white;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
-    /* The subtitle style is also applied inline in the HTML for safety */
+    /* Subtitle style also applied inline for safety */
     .stChatMessage pre, .stChatMessage code, .stMarkdown pre {
         font-family: 'Courier New', Courier, monospace !important;
         font-size: 1rem !important;
