@@ -1,4 +1,4 @@
-# app.py - Final version using raw tool outputs, consistent routing
+# app.py - Final, with version marker and guaranteed routing
 import streamlit as st
 import sys
 import os
@@ -18,6 +18,9 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 st.set_page_config(page_title="GreenMind - Environmental Advisor", layout="wide")
+
+# ---------------- VERSION MARKER (to confirm deployment) ----------------
+st.sidebar.write("**Version:** 2026-04-16-final")
 
 # ---------------- MCP CLIENT (HTTPS for remote) ----------------
 async def get_client():
@@ -45,7 +48,7 @@ async def call_tool(tool_name, query):
     except Exception as e:
         return None, f"error: {str(e)}"
 
-# ---------------- DIRECT ANSWERS (fallback) ----------------
+# ---------------- DIRECT ANSWERS (hardcoded, bypass any tool) ----------------
 def get_direct_answer(query):
     q = query.lower()
     if "paris agreement" in q:
@@ -78,8 +81,8 @@ Key policies:
 
 # ---------------- INTENT DETECTION ----------------
 def is_tip_query(q):
-    # match common tip keywords
-    keywords = ['tip', 'advice', 'sustainable', 'eco-friendly', 'home', 'house',
+    # broad match – tips, home, advice, etc.
+    keywords = ['tip', 'tips', 'advice', 'sustainable', 'eco-friendly', 'home', 'house',
                 'kitchen', 'garden', 'recycle', 'plastic', 'waste', 'energy', 'water']
     return any(k in q for k in keywords)
 
@@ -96,69 +99,64 @@ def extract_cities(q):
 async def process(query):
     q = query.lower()
 
-    # 1. Tips (must be first)
+    # 1. TIPS (always allowed, before anything else)
     if is_tip_query(q):
         res, _ = await call_tool("Sustainability_Tips", query)
         if res:
             return res
         return "Simple tip: Reduce, reuse, recycle. Every small action helps."
 
-    # 2. Direct answers (bypass RAG/web)
+    # 2. DIRECT ANSWERS (bypass all tools)
     direct = get_direct_answer(query)
     if direct:
         return direct
 
-    # 3. Comparison: combine raw outputs of tools
+    # 3. COMPARISON (use raw tool outputs)
     if is_comparison_query(q):
         cities = extract_cities(q)
         if not cities:
-            # default pair
+            # default to Delhi and Mumbai for pollution comparison
             cities = ["delhi", "mumbai"] if "pollution" in q else ["delhi", "london"]
 
         parts = []
         for city in cities:
-            # Get pollution data
+            # Pollution
             pol, _ = await call_tool("Pollution_Health_Index", city)
             if pol:
                 parts.append(pol)
-            # Get carbon data (optional)
+            # Carbon (optional)
             carb, _ = await call_tool("Carbon_Footprint_Calculator", city)
             if carb:
                 parts.append(carb)
         if parts:
             return "\n\n" + ("\n" + "-"*50 + "\n").join(parts)
-        return "Unable to compare. Try specific city names like Delhi and Mumbai."
+        return "Unable to compare. Try 'compare pollution in Delhi and Mumbai'."
 
-    # 4. Pollution / AQI
-    if any(w in q for w in ["aqi", "air quality", "pollution index", "pollution of"]):
-        res, _ = await call_tool("Pollution_Health_Index", query)
-        if res:
-            return res
-        # fallback for known cities (if tool fails)
-        if "delhi" in q:
-            return "Pollution data for Delhi is currently unavailable. Please try again later."
-        return "Pollution data unavailable. Please try a different location."
-
-    # 5. Carbon footprint
-    if any(w in q for w in ["carbon", "footprint", "co2", "emission"]):
-        res, _ = await call_tool("Carbon_Footprint_Calculator", query)
-        if res:
-            return res
-        if "delhi" in q:
-            return "Carbon footprint data for Delhi is currently unavailable."
-        return "Carbon footprint data unavailable. Try a specific city like 'Delhi'."
-
-    # 6. Health effects (use Effects RAG)
-    if any(w in q for w in ["health", "disease", "respiratory", "cancer", "asthma"]):
+    # 4. HEALTH EFFECTS (must go to Effects RAG, not pollution)
+    if any(w in q for w in ["health", "disease", "respiratory", "cancer", "asthma", "bronchitis"]):
         res, _ = await call_tool("Environmental_Effects_RAG", query)
         if res and len(res) > 50:
             return res
-        # fallback generic answer
+        # fallback
         if "air pollution" in q:
             return "Air pollution can cause asthma, bronchitis, lung cancer, and respiratory infections. Fine particles (PM2.5) penetrate deep into the lungs and bloodstream."
         return "Health effects information not available. Please rephrase your question."
 
-    # 7. Policies (RAG with fallback to web search)
+    # 5. POLLUTION / AQI
+    if any(w in q for w in ["aqi", "air quality", "pollution index", "pollution of"]):
+        res, _ = await call_tool("Pollution_Health_Index", query)
+        if res:
+            return res
+        return "Pollution data unavailable. Please try a different location."
+
+    # 6. CARBON FOOTPRINT
+    if any(w in q for w in ["carbon", "footprint", "co2", "emission"]):
+        res, _ = await call_tool("Carbon_Footprint_Calculator", query)
+        if res:
+            return res
+        return "Carbon footprint data unavailable. Try a specific city like 'Delhi'."
+
+    # 7. POLICIES (RAG with web search fallback)
     if any(w in q for w in ["policy", "act", "regulation", "law", "treaty", "agreement"]):
         res, _ = await call_tool("Environmental_Policies_RAG", query)
         if res and len(res) > 50:
@@ -169,14 +167,14 @@ async def process(query):
             return res2
         return "Policy information not available. Try a more specific query, e.g., 'Paris Agreement goals'."
 
-    # 8. Wikipedia
+    # 8. WIKIPEDIA
     if "wikipedia" in q:
         res, _ = await call_tool("Wikipedia_Knowledge", query)
         if res:
             return res
         return "No Wikipedia article found. Try different search terms."
 
-    # 9. General web search
+    # 9. GENERAL WEB SEARCH
     res, _ = await call_tool("Web_Search", query)
     if res and "unavailable" not in res.lower():
         return res
@@ -190,7 +188,7 @@ def run(query):
     loop.close()
     return result
 
-# ---------------- UI ----------------
+# ---------------- UI (wrap every response in <pre> for consistent font) ----------------
 st.title("GreenMind - Environmental Advisor")
 
 if not st.session_state.messages:
@@ -201,7 +199,11 @@ if not st.session_state.messages:
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+        # Wrap assistant responses in <pre> for monospace, but keep user messages as plain
+        if msg["role"] == "assistant" and not msg["content"].startswith("Ask about"):
+            st.markdown(f'<pre style="font-family: monospace; font-size: 1rem; background-color: #f5f5f5; padding: 12px; border-radius: 8px; white-space: pre-wrap;">{msg["content"]}</pre>', unsafe_allow_html=True)
+        else:
+            st.markdown(msg["content"])
 
 prompt = st.chat_input("Enter your query")
 if prompt:
@@ -209,6 +211,6 @@ if prompt:
     with st.chat_message("assistant"):
         with st.spinner("Processing..."):
             response = run(prompt)
-            st.markdown(response)   # raw markdown (rich formatting preserved)
+            st.markdown(f'<pre style="font-family: monospace; font-size: 1rem; background-color: #f5f5f5; padding: 12px; border-radius: 8px; white-space: pre-wrap;">{response}</pre>', unsafe_allow_html=True)
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.rerun()
