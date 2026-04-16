@@ -1,4 +1,5 @@
 # app.py - Final with version marker and correct routing
+# app.py - Complete version without emojis
 import streamlit as st
 import sys
 import os
@@ -20,7 +21,7 @@ if "messages" not in st.session_state:
 st.set_page_config(page_title="GreenMind - Environmental Advisor", layout="wide")
 
 # ---------------- VERSION MARKER (to verify deployment) ----------------
-st.sidebar.write("**Version:** 2026-04-16-tips-fix")
+st.sidebar.write("**Version:** 2026-04-16-final-no-emoji")
 
 # ---------------- MCP CLIENT (HTTPS for remote) ----------------
 async def get_client():
@@ -38,7 +39,7 @@ async def call_tool(tool_name, query):
     try:
         result = await asyncio.wait_for(
             client.call_tool(tool_name, input=query),
-            timeout=45
+            timeout=60          # increased to handle cold starts
         )
         if result and isinstance(result, str):
             low = result.lower()
@@ -48,40 +49,39 @@ async def call_tool(tool_name, query):
     except Exception as e:
         return None, f"error: {str(e)}"
 
-# ---------------- DIRECT ANSWERS ----------------
+# ---------------- DIRECT ANSWERS (hardcoded, no emojis) ----------------
 def get_direct_answer(query):
     q = query.lower()
     if "paris agreement" in q:
-        return """The Paris Agreement is a legally binding international treaty on climate change.
+        return """Paris Agreement - Legally binding international treaty on climate change.
 
 Key points:
-• Adopted by 196 parties at COP 21 in Paris on 12 December 2015
-• Entered into force on 4 November 2016
-• Goal: Limit global warming to well below 2°C, preferably to 1.5°C
-• Requires countries to submit Nationally Determined Contributions (NDCs)
-• Requires developed countries to provide climate finance"""
+- Adopted by 196 parties at COP 21 in Paris on 12 December 2015
+- Entered into force on 4 November 2016
+- Goal: Limit global warming to well below 2 degrees Celsius, preferably to 1.5 degrees
+- Requires countries to submit Nationally Determined Contributions (NDCs)
+- Requires developed countries to provide climate finance"""
     if "clean air act" in q:
-        return """The Clean Air Act (US) controls air pollution.
+        return """Clean Air Act (United States) - Controls air pollution.
 
 Key provisions:
-• EPA sets National Ambient Air Quality Standards (NAAQS)
-• Regulates emissions from stationary and mobile sources
-• Cap-and-trade for acid rain
-• First passed 1963, amended 1970, 1977, 1990"""
+- EPA sets National Ambient Air Quality Standards (NAAQS)
+- Regulates emissions from stationary and mobile sources
+- Cap-and-trade program for acid rain
+- First passed 1963, major amendments in 1970, 1977, 1990"""
     if "european green deal" in q or "eu green deal" in q:
-        return """The European Green Deal aims to make the EU climate neutral by 2050.
+        return """European Green Deal - Aims to make the EU climate neutral by 2050.
 
 Key policies:
-• European Climate Law (legally binding climate neutrality)
-• Fit for 55 package (55% emission reduction by 2030)
-• Circular Economy Action Plan
-• Biodiversity Strategy for 2030
-• Farm to Fork Strategy"""
+- European Climate Law (legally binding climate neutrality)
+- Fit for 55 package (55 percent emission reduction by 2030)
+- Circular Economy Action Plan
+- Biodiversity Strategy for 2030
+- Farm to Fork Strategy"""
     return None
 
 # ---------------- INTENT DETECTION ----------------
 def is_tip_query(q):
-    # Broad match for any tip, advice, home, sustainability related query
     keywords = [
         'tip', 'tips', 'advice', 'sustainable', 'eco-friendly', 'home', 'house',
         'kitchen', 'garden', 'recycle', 'plastic', 'waste', 'energy', 'water',
@@ -102,19 +102,19 @@ def extract_cities(q):
 async def process(query):
     q = query.lower()
 
-    # 1. TIPS – must be FIRST (before any domain check)
+    # 1. TIPS (must be FIRST)
     if is_tip_query(q):
         res, _ = await call_tool("Sustainability_Tips", query)
         if res:
             return res
         return "Simple tip: Reduce, reuse, recycle. Every small action helps."
 
-    # 2. DIRECT ANSWERS (bypass all tools)
+    # 2. DIRECT ANSWERS
     direct = get_direct_answer(query)
     if direct:
         return direct
 
-    # 3. HEALTH EFFECTS (must go to Effects RAG)
+    # 3. HEALTH EFFECTS (use Effects RAG)
     if any(w in q for w in ["health", "disease", "respiratory", "cancer", "asthma", "bronchitis"]):
         res, _ = await call_tool("Environmental_Effects_RAG", query)
         if res and len(res) > 50:
@@ -123,7 +123,7 @@ async def process(query):
             return "Air pollution can cause asthma, bronchitis, lung cancer, and respiratory infections. Fine particles (PM2.5) penetrate deep into the lungs and bloodstream."
         return "Health effects information not available. Please rephrase your question."
 
-    # 4. COMPARISON
+    # 4. COMPARISON (raw tool outputs)
     if is_comparison_query(q):
         cities = extract_cities(q)
         if not cities:
@@ -185,7 +185,7 @@ def run(query):
     loop.close()
     return result
 
-# ---------------- UI ----------------
+# ---------------- UI (wrap all assistant responses in <pre> for consistent monospace) ----------------
 st.title("GreenMind - Environmental Advisor")
 
 if not st.session_state.messages:
@@ -196,9 +196,11 @@ if not st.session_state.messages:
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
-        # Wrap assistant responses in <pre> for consistent monospace font
         if msg["role"] == "assistant" and not msg["content"].startswith("Ask about"):
-            st.markdown(f'<pre style="font-family: monospace; font-size: 1rem; background-color: #f5f5f5; padding: 12px; border-radius: 8px; white-space: pre-wrap;">{msg["content"]}</pre>', unsafe_allow_html=True)
+            st.markdown(
+                f'<pre style="font-family: monospace; font-size: 1rem; background-color: #f5f5f5; padding: 12px; border-radius: 8px; white-space: pre-wrap;">{msg["content"]}</pre>',
+                unsafe_allow_html=True
+            )
         else:
             st.markdown(msg["content"])
 
@@ -208,6 +210,9 @@ if prompt:
     with st.chat_message("assistant"):
         with st.spinner("Processing..."):
             response = run(prompt)
-            st.markdown(f'<pre style="font-family: monospace; font-size: 1rem; background-color: #f5f5f5; padding: 12px; border-radius: 8px; white-space: pre-wrap;">{response}</pre>', unsafe_allow_html=True)
+            st.markdown(
+                f'<pre style="font-family: monospace; font-size: 1rem; background-color: #f5f5f5; padding: 12px; border-radius: 8px; white-space: pre-wrap;">{response}</pre>',
+                unsafe_allow_html=True
+            )
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.rerun()
