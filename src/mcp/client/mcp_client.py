@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 import requests
 import logging
-import time
 import asyncio
 
 logger = logging.getLogger(__name__)
 
 class MCPClient:
-    def __init__(self, host: str = "localhost", port: int = 8000, timeout: int = 30):
+    def __init__(self, host: str = "localhost", port: int = 8000, timeout: int = 60):
         self.host = host
         self.port = port
         self.timeout = timeout
@@ -19,6 +18,7 @@ class MCPClient:
         self.connected = False
 
     async def connect(self, retries: int = 2) -> bool:
+        """Attempt to connect to the MCP server with retries."""
         for attempt in range(retries):
             try:
                 response = requests.get(
@@ -43,7 +43,7 @@ class MCPClient:
 
     async def disconnect(self):
         self.connected = False
-        logger.info("Disconnected")
+        logger.info("Disconnected from MCP server")
 
     async def call_tool(self, tool_name: str, **params):
         if not self.connected:
