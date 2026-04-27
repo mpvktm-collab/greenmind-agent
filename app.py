@@ -1,4 +1,4 @@
-# app.py - Final complete working version (health effects fixed)
+# app.py - Version 2026-04-27-v2
 import streamlit as st
 import sys
 import os
@@ -26,6 +26,9 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 st.set_page_config(page_title="GreenMind - Environmental Advisor", layout="wide")
+
+# ---------------- VERSION MARKER ----------------
+st.sidebar.write("**Version:** 2026-04-27-v2")
 
 # ---------------- SIDEBAR DEBUG ----------------
 st.sidebar.write("**Debug Info**")
@@ -100,12 +103,22 @@ async def process(query):
     if direct:
         return direct
 
-    # 3. HEALTH EFFECTS – CHECK FOR "HEALTH" OR "DISEASE" FIRST
-    # This block runs BEFORE any block that looks for "pollution"
+    # 3. HEALTH EFFECTS – CHECK FOR "HEALTH" FIRST
     if 'health' in q or 'disease' in q or 'respiratory' in q or 'cancer' in q:
         res, _ = await call_tool("Environmental_Effects_RAG", query)
         if res and len(res) > 50:
             return res
+        # Fallback for plastic pollution
+        if 'plastic' in q:
+            return """Health effects of plastic pollution:
+
+- Microplastics found in drinking water, food, and air
+- Chemical leaching (BPA, phthalates) causing endocrine disruption
+- Potential carcinogenic effects from plastic additives
+- Inflammation and oxidative stress from microplastic ingestion
+- Harm to digestive system from plastic particles
+
+Prevention: Reduce single-use plastics, use reusable containers, avoid heating food in plastic."""
         # Fallback for air pollution
         if 'air pollution' in q:
             return """Health effects of air pollution:
@@ -118,17 +131,6 @@ async def process(query):
 - Children and elderly are most vulnerable
 
 Fine particulate matter (PM2.5) penetrates deep into the lungs and enters the bloodstream."""
-        # Fallback for plastic pollution
-        if 'plastic' in q:
-            return """Health effects of plastic pollution:
-
-- Microplastics found in drinking water, food, and air
-- Chemical leaching (BPA, phthalates) causing endocrine disruption
-- Potential carcinogenic effects from plastic additives
-- Inflammation and oxidative stress from microplastic ingestion
-- Harm to digestive system from plastic particles
-
-Prevention: Reduce single-use plastics, use reusable containers, avoid heating food in plastic."""
         return "Health effects information not available. Please rephrase your question."
 
     # 4. COMPARISON
@@ -181,8 +183,8 @@ Prevention: Reduce single-use plastics, use reusable containers, avoid heating f
 
     # 9. WEB SEARCH
     res, _ = await call_tool("Web_Search", query)
-    if res and "unavailable" not in res.lower():
-        return res
+    if res and "unavailable" not in res2.lower():
+            return res
 
     return "I couldn't find information on that topic. Please ask about environmental policies, pollution, carbon footprint, or sustainability tips."
 
