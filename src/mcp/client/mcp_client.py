@@ -6,7 +6,7 @@ import asyncio
 logger = logging.getLogger(__name__)
 
 class MCPClient:
-    def __init__(self, host: str = "localhost", port: int = 8000, timeout: int = 60):
+    def __init__(self, host: str = "localhost", port: int = 8000, timeout: int = 90):
         self.host = host
         self.port = port
         self.timeout = timeout
@@ -21,10 +21,13 @@ class MCPClient:
         """Attempt to connect to the MCP server with retries."""
         for attempt in range(retries):
             try:
+                # --- THIS IS THE KEY CHANGE ---
+                # Timeout increased from 10 to 90 seconds
                 response = requests.get(
                     f"{self.base_url}/tools",
-                    timeout=self.timeout
+                    timeout=90      # Was 10 or 30
                 )
+                # -------------------------------
                 if response.status_code == 200:
                     self.connected = True
                     logger.info(f"Connected to MCP server at {self.base_url}")
@@ -55,7 +58,7 @@ class MCPClient:
             response = requests.post(
                 f"{self.base_url}/call_tool",
                 json=payload,
-                timeout=60
+                timeout=90
             )
             if response.status_code != 200:
                 raise Exception(f"Server error: HTTP {response.status_code}")
