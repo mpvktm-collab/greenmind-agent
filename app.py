@@ -50,7 +50,7 @@ async def call_tool(tool_name, query):
     try:
         result = await asyncio.wait_for(
             client.call_tool(tool_name, input=query),
-            timeout=60
+            timeout=90
         )
         if result and isinstance(result, str):
             low = result.lower()
@@ -100,10 +100,12 @@ async def process(query):
     if direct:
         return direct
 
-    # 3. HEALTH EFFECTS (must come before pollution)
+    # 3. HEALTH EFFECTS (MUST BE BEFORE "pollution" KEYWORD)
     health_keywords = [
-        'health', 'disease', 'respiratory', 'cancer', 'asthma', 'bronchitis',
-        'plastic pollution', 'microplastic', 'health effect', 'toxic', 'chemical'
+        'health effect', 'health effects', 'health impact', 'health risk',
+        'disease', 'respiratory', 'cancer', 'asthma', 'bronchitis',
+        'plastic pollution', 'microplastic', 'toxic', 'chemical',
+        'waterborne', 'cholera', 'typhoid'
     ]
     if any(w in q for w in health_keywords):
         res, _ = await call_tool("Environmental_Effects_RAG", query)
