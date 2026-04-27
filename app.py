@@ -1,4 +1,4 @@
-# app.py - Final working version (health effects routed correctly)
+# app.py - Final complete working version (health effects fixed)
 import streamlit as st
 import sys
 import os
@@ -100,17 +100,24 @@ async def process(query):
     if direct:
         return direct
 
-    # 3. HEALTH EFFECTS – MUST BE BEFORE ANY "pollution" MATCH
-    health_keywords = [
-        'health effect', 'health effects', 'health impact', 'health risk',
-        'disease', 'respiratory', 'cancer', 'asthma', 'bronchitis',
-        'plastic pollution', 'microplastic', 'toxic', 'chemical',
-        'waterborne', 'cholera', 'typhoid'
-    ]
-    if any(w in q for w in health_keywords):
+    # 3. HEALTH EFFECTS – CHECK FOR "HEALTH" OR "DISEASE" FIRST
+    # This block runs BEFORE any block that looks for "pollution"
+    if 'health' in q or 'disease' in q or 'respiratory' in q or 'cancer' in q:
         res, _ = await call_tool("Environmental_Effects_RAG", query)
         if res and len(res) > 50:
             return res
+        # Fallback for air pollution
+        if 'air pollution' in q:
+            return """Health effects of air pollution:
+
+- Respiratory diseases: asthma, bronchitis, COPD
+- Cardiovascular problems: heart attacks, stroke
+- Lung cancer
+- Worsening of existing lung conditions
+- Premature death in people with heart or lung disease
+- Children and elderly are most vulnerable
+
+Fine particulate matter (PM2.5) penetrates deep into the lungs and enters the bloodstream."""
         # Fallback for plastic pollution
         if 'plastic' in q:
             return """Health effects of plastic pollution:
