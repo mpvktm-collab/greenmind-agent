@@ -1,4 +1,4 @@
-# app.py - Complete working version (health effects fixed)
+# app.py - Final working version (health effects routed correctly)
 import streamlit as st
 import sys
 import os
@@ -100,7 +100,7 @@ async def process(query):
     if direct:
         return direct
 
-    # 3. HEALTH EFFECTS (MUST BE BEFORE "pollution" KEYWORD)
+    # 3. HEALTH EFFECTS – MUST BE BEFORE ANY "pollution" MATCH
     health_keywords = [
         'health effect', 'health effects', 'health impact', 'health risk',
         'disease', 'respiratory', 'cancer', 'asthma', 'bronchitis',
