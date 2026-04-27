@@ -1,4 +1,4 @@
-# app.py - Version 2026-04-27-v3 (FINAL)
+# app.py - Version 2026-04-27-v4 (FINAL FIX)
 import streamlit as st
 import sys
 import os
@@ -30,21 +30,19 @@ st.set_page_config(page_title="GreenMind - Environmental Advisor", layout="wide"
 # ---------------- FONT NORMALIZATION CSS ----------------
 st.markdown("""
 <style>
-/* Normalize all heading sizes inside tool output blocks */
-div.tool-output h1, div.tool-output h2, div.tool-output h3,
-div.tool-output h4, div.tool-output h5, div.tool-output h6 {
+/* Normalize all heading sizes inside all outputs */
+.stChatMessage h1, .stChatMessage h2, .stChatMessage h3,
+.stChatMessage h4, .stChatMessage h5, .stChatMessage h6 {
     font-size: 1rem !important;
     font-weight: 600 !important;
     margin: 0.4rem 0 0.2rem 0 !important;
-    line-height: 1.4 !important;
 }
-div.tool-output pre, div.tool-output code { font-size: 0.85rem !important; }
-div.tool-output p { margin: 0.2rem 0 !important; line-height: 1.5 !important; }
+.stChatMessage pre, .stChatMessage code { font-size: 0.85rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- VERSION MARKER ----------------
-st.sidebar.write("**Version:** 2026-04-27-v3")
+st.sidebar.write("**Version:** 2026-04-27-v4")
 
 # ---------------- SIDEBAR DEBUG ----------------
 st.sidebar.write("**Debug Info**")
@@ -79,23 +77,22 @@ async def call_tool(tool_name, query):
     except Exception as e:
         return None, f"error: {str(e)}"
 
-# ---------------- RESPONSE WRAPPER (MODULE LEVEL) ----------------
-def tool_response(text: str) -> str:
-    """Wrap tool output in a div to normalize heading sizes."""
+# ---------------- RESPONSE WRAPPER ----------------
+def clean_heading(text: str) -> str:
+    """Remove markdown headings to prevent giant fonts"""
     if not text:
         return text
-    
     lines = text.split('\n')
-    normalized = []
+    cleaned = []
     for line in lines:
         stripped = line.lstrip()
         if stripped.startswith('#'):
-            heading_text = stripped.lstrip('#').strip()
-            normalized.append(f'**{heading_text}**')
+            # Remove the # symbols and make bold instead
+            content = stripped.lstrip('#').strip()
+            cleaned.append(f"**{content}**")
         else:
-            normalized.append(line)
-    
-    return f'<div class="tool-output">{"<br>".join(normalized)}</div>'
+            cleaned.append(line)
+    return '\n'.join(cleaned)
 
 # ---------------- DIRECT ANSWERS ----------------
 def get_direct_answer(query):
@@ -110,193 +107,153 @@ def get_direct_answer(query):
 - Requires countries to submit Nationally Determined Contributions (NDCs)"""
     return None
 
-# ---------------- QUERY CLASSIFIERS ----------------
-def matches_any(q, keywords):
-    return any(k in q for k in keywords)
-
-HEALTH_KEYWORDS = [
-    'health', 'disease', 'respiratory', 'cancer', 'effect', 'effects',
-    'impact', 'impacts', 'harm', 'harmful', 'symptom', 'symptoms',
-    'cause', 'causes', 'risk', 'risks', 'toxic', 'toxicity',
-]
-
-TIP_KEYWORDS = [
-    'tip', 'tips', 'advice', 'home', 'house', 'garden',
-    'energy saving', 'water saving', 'recycle', 'sustainable living',
-]
-
-POLICY_KEYWORDS = [
-    'policy', 'policies', 'act', 'regulation', 'law', 'treaty',
-    'agreement', 'protocol', 'framework', 'legislation',
-]
-
-POLLUTION_KEYWORDS = [
-    'aqi', 'air quality', 'pollution index', 'pollution level',
-    'pollution of', 'air pollution level', 'pollution in',
-]
-
-CARBON_KEYWORDS = [
-    'carbon footprint', 'footprint', 'co2 emission', 'carbon emission',
-    'greenhouse gas', 'ghg',
-]
-
-COMPARISON_KEYWORDS = ['compare', ' vs ', 'versus']
-
-def extract_cities(q):
-    cities = ['delhi', 'mumbai', 'chennai', 'kolkata', 'london',
-              'new york', 'tokyo', 'beijing', 'paris', 'sydney']
-    return [c for c in cities if c in q]
-
 # ---------------- HEALTH EFFECTS FALLBACKS ----------------
 HEALTH_FALLBACKS = {
     'plastic': """**Health Effects of Plastic Pollution**
 
-Plastic pollution poses serious risks to human health through multiple exposure pathways:
-
 **Microplastics & Ingestion**
-- Microplastics have been detected in drinking water, seafood, salt, and even human blood
-- Particles can accumulate in organs, triggering inflammation and oxidative stress
-- Nanoplastics (<1 μm) can cross the blood-brain barrier
+- Microplastics detected in drinking water, seafood, salt, and human blood
+- Particles accumulate in organs, causing inflammation and oxidative stress
 
 **Chemical Leaching**
-- BPA and phthalates leach from plastics and act as endocrine disruptors
+- BPA and phthalates leach from plastics, acting as endocrine disruptors
 - Linked to hormonal imbalances, reproductive issues, and developmental problems
-- Flame retardants and stabilisers in plastics are associated with neurotoxicity
-
-**Carcinogenic Risk**
-- Several plastic additives (e.g., styrene, vinyl chloride) are classified as probable carcinogens
-- Burning plastic releases dioxins and furans — highly toxic compounds
 
 **Prevention Tips**
-- Reduce single-use plastics and switch to glass or stainless steel containers
-- Never heat food in plastic containers
-- Filter tap water and choose certified plastic-free products""",
+- Reduce single-use plastics, use glass or stainless steel containers
+- Never heat food in plastic containers""",
 
     'air': """**Health Effects of Air Pollution**
 
-Air pollution is one of the leading environmental causes of death globally (WHO: ~7 million deaths/year).
-
 **Respiratory System**
-- Short-term: Irritation of airways, coughing, wheezing
-- Long-term: Asthma, chronic bronchitis, COPD, reduced lung function
+- Short-term: Coughing, wheezing, throat irritation
+- Long-term: Asthma, bronchitis, COPD, reduced lung function
 
 **Cardiovascular System**
-- Fine particles (PM2.5) enter the bloodstream, increasing risk of heart attack and stroke
-- Long-term exposure linked to atherosclerosis and hypertension
-
-**Cancer**
-- PM2.5 and diesel exhaust are classified as Group 1 carcinogens (IARC)
-- Elevated lung cancer risk even in non-smokers in polluted areas
+- Fine particles (PM2.5) increase risk of heart attack and stroke
 
 **Vulnerable Groups**
-- Children, elderly, pregnant women, and those with pre-existing conditions face the highest risk""",
+- Children, elderly, pregnant women, and those with pre-existing conditions face highest risk""",
 
     'water': """**Health Effects of Water Pollution**
 
-Contaminated water is responsible for approximately 485,000 deaths from diarrhoeal diseases annually (WHO).
-
 **Microbial Contamination**
-- Bacteria (E. coli, Salmonella), viruses (Hepatitis A), and parasites cause acute gastrointestinal illness
+- Bacteria, viruses, and parasites cause acute gastrointestinal illness
 
 **Chemical Pollutants**
-- Heavy metals (lead, mercury, arsenic): neurotoxic, carcinogenic, damage kidneys and liver
-- Nitrates from agricultural runoff cause methemoglobinaemia in infants
-- PFAS ("forever chemicals"): linked to cancer, thyroid disease, and immune suppression"""
+- Heavy metals (lead, mercury, arsenic): neurotoxic and carcinogenic
+- Nitrates cause methemoglobinemia in infants"""
 }
 
 def get_health_fallback(q):
+    q_lower = q.lower()
     for keyword, response in HEALTH_FALLBACKS.items():
-        if keyword in q:
+        if keyword in q_lower:
             return response
     return None
 
-# ---------------- MAIN PROCESSING ----------------
+# ---------------- QUERY PROCESSING ----------------
 async def process(query):
     q = query.lower()
-
-    # PRIORITY 1: SUSTAINABILITY TIPS
-    if matches_any(q, TIP_KEYWORDS):
-        res, status = await call_tool("Sustainability_Tips", query)
-        if res:
-            return tool_response(res)
-        return "**Sustainability Tip:** Reduce, reuse, recycle — and carry a reusable bag!"
-
-    # PRIORITY 2: HEALTH / EFFECTS (MUST BE BEFORE POLLUTION)
-    if matches_any(q, HEALTH_KEYWORDS):
+    
+    # ============================================================
+    # PRIORITY 1: HEALTH EFFECTS - CHECK FIRST, BEFORE ANYTHING ELSE
+    # ============================================================
+    # This MUST be the very first check to prevent "health effects of plastic pollution"
+    # from being routed to the pollution tool.
+    if 'health' in q or 'effect' in q or 'disease' in q or 'respiratory' in q:
+        # First try the RAG tool
         res, status = await call_tool("Environmental_Effects_RAG", query)
-        if res and len(res) > 80:
-            return tool_response(res)
-        fallback = get_health_fallback(q)
+        if res and len(res) > 100:
+            return clean_heading(res)
+        # Fallback to curated answers
+        fallback = get_health_fallback(query)
         if fallback:
             return fallback
+        # Last resort: web search
         res_web, _ = await call_tool("Web_Search", query)
-        if res_web and len(res_web) > 80:
-            return tool_response(res_web)
-        return "Health effects information is currently unavailable. Please rephrase your question."
+        if res_web and len(res_web) > 50:
+            return clean_heading(res_web)
+        return "Health effects information is currently unavailable."
+    
+    # ============================================================
+    # PRIORITY 2: SUSTAINABILITY TIPS
+    # ============================================================
+    tip_keywords = ['tip', 'tips', 'advice', 'home', 'garden', 'energy saving', 'water saving', 'recycle']
+    if any(k in q for k in tip_keywords):
+        res, status = await call_tool("Sustainability_Tips", query)
+        if res:
+            return clean_heading(res)
+        return "**Sustainability Tip:** Reduce, reuse, recycle!"
 
-    # PRIORITY 3: DIRECT HARDCODED ANSWERS
+    # ============================================================
+    # PRIORITY 3: DIRECT ANSWERS
+    # ============================================================
     direct = get_direct_answer(query)
     if direct:
         return direct
 
+    # ============================================================
     # PRIORITY 4: COMPARISON
-    if matches_any(q, COMPARISON_KEYWORDS):
-        cities = extract_cities(q)
-        if not cities:
-            cities = ["delhi", "mumbai"] if "pollution" in q else ["delhi", "london"]
+    # ============================================================
+    if 'compare' in q or ' vs ' in q:
+        cities = ['delhi', 'mumbai', 'chennai', 'london', 'new york', 'tokyo']
+        found_cities = [c for c in cities if c in q]
+        if not found_cities:
+            found_cities = ["delhi", "mumbai"]
         parts = []
-        for city in cities:
+        for city in found_cities[:3]:
             pol, _ = await call_tool("Pollution_Health_Index", city)
             if pol:
-                parts.append(tool_response(pol))
+                parts.append(clean_heading(pol))
             carb, _ = await call_tool("Carbon_Footprint_Calculator", city)
             if carb:
-                parts.append(tool_response(carb))
+                parts.append(clean_heading(carb))
         if parts:
-            return ("\n" + "—" * 40 + "\n").join(parts)
-        return "Unable to retrieve comparison data for the requested locations."
+            return "\n\n---\n\n".join(parts)
+        return "Unable to compare locations."
 
-    # PRIORITY 5: POLLUTION / AQI
-    if matches_any(q, POLLUTION_KEYWORDS):
+    # ============================================================
+    # PRIORITY 5: POLLUTION / AQI (only if no health keywords)
+    # ============================================================
+    pollution_keywords = ['aqi', 'air quality', 'pollution index', 'pollution level']
+    if any(k in q for k in pollution_keywords):
         res, _ = await call_tool("Pollution_Health_Index", query)
         if res:
-            return tool_response(res)
-        return "Pollution index data is currently unavailable for that location."
+            return clean_heading(res)
+        return "Pollution data unavailable for that location."
 
+    # ============================================================
     # PRIORITY 6: CARBON FOOTPRINT
-    if matches_any(q, CARBON_KEYWORDS):
+    # ============================================================
+    carbon_keywords = ['carbon', 'footprint', 'co2', 'emission']
+    if any(k in q for k in carbon_keywords):
         res, _ = await call_tool("Carbon_Footprint_Calculator", query)
         if res:
-            return tool_response(res)
-        return "Carbon footprint data is currently unavailable."
+            return clean_heading(res)
+        return "Carbon footprint data unavailable."
 
-    # PRIORITY 7: ENVIRONMENTAL POLICIES
-    if matches_any(q, POLICY_KEYWORDS):
+    # ============================================================
+    # PRIORITY 7: POLICIES
+    # ============================================================
+    policy_keywords = ['policy', 'act', 'regulation', 'law', 'treaty', 'agreement']
+    if any(k in q for k in policy_keywords):
         res, _ = await call_tool("Environmental_Policies_RAG", query)
         if res and len(res) > 50:
-            return tool_response(res)
+            return clean_heading(res)
         res_web, _ = await call_tool("Web_Search", query)
-        if res_web and res_web.strip():
-            return tool_response(res_web)
-        return "Policy information is not available for that query."
+        if res_web:
+            return clean_heading(res_web)
+        return "Policy information not available."
 
-    # PRIORITY 8: WIKIPEDIA
-    if "wikipedia" in q:
-        res, _ = await call_tool("Wikipedia_Knowledge", query)
-        if res:
-            return tool_response(res)
-        return "No Wikipedia article found for that topic."
-
-    # PRIORITY 9: GENERAL WEB SEARCH
+    # ============================================================
+    # PRIORITY 8: WEB SEARCH
+    # ============================================================
     res_web, _ = await call_tool("Web_Search", query)
-    if res_web and res_web.strip():
-        return tool_response(res_web)
+    if res_web:
+        return clean_heading(res_web)
 
-    return (
-        "I couldn't find information on that topic. "
-        "I can help with environmental policies, pollution levels, "
-        "health effects, carbon footprints, or sustainability tips."
-    )
+    return "I couldn't find information on that topic. Please try rephrasing your question."
 
 def run(query):
     loop = asyncio.new_event_loop()
@@ -311,24 +268,19 @@ st.title("🌿 GreenMind — Environmental Advisor")
 if not st.session_state.messages:
     st.session_state.messages.append({
         "role": "assistant",
-        "content": (
-            "Hello! I'm **GreenMind**, your intelligent environmental advisor. 🌍\n\n"
-            "*\"The Earth does not belong to us — we belong to the Earth.\"*\n\n"
-            "Ask me about pollution levels, environmental policies, health effects, "
-            "carbon footprints, or sustainability tips."
-        )
+        "content": "Hello! I'm **GreenMind**, your environmental advisor.\n\nAsk me about pollution levels, health effects, carbon footprints, policies, or sustainability tips."
     })
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-prompt = st.chat_input("Ask GreenMind anything about the environment...")
+prompt = st.chat_input("Ask GreenMind about the environment...")
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("assistant"):
-        with st.spinner("🌱 Thinking..."):
+        with st.spinner("Thinking..."):
             response = run(prompt)
-            st.markdown(response, unsafe_allow_html=True)
+            st.markdown(response)
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.rerun()
