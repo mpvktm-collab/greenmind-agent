@@ -1,4 +1,4 @@
-# app.py - Debug version with connectivity test
+# app.py - Complete working version (health effects fixed)
 import streamlit as st
 import sys
 import os
@@ -9,7 +9,7 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from src.mcp.client.mcp_client import MCPClient
 
-# ---------------- CONNECTIVITY TEST (direct, bypassing MCPClient) ----------------
+# ---------------- CONNECTIVITY TEST ----------------
 backend_url = "https://greenmind-agent.onrender.com"
 try:
     test_response = requests.get(f"{backend_url}/tools", timeout=30)
@@ -27,7 +27,7 @@ if "messages" not in st.session_state:
 
 st.set_page_config(page_title="GreenMind - Environmental Advisor", layout="wide")
 
-# ---------------- SIDEBAR DEBUG INFO ----------------
+# ---------------- SIDEBAR DEBUG ----------------
 st.sidebar.write("**Debug Info**")
 st.sidebar.write(f"Backend URL: {backend_url}")
 st.sidebar.write(f"Backend Status: {backend_status}")
@@ -70,8 +70,7 @@ Key points:
 - Adopted by 196 parties at COP 21 in Paris on 12 December 2015
 - Entered into force on 4 November 2016
 - Goal: Limit global warming to well below 2 degrees Celsius, preferably to 1.5 degrees
-- Requires countries to submit Nationally Determined Contributions (NDCs)
-- Requires developed countries to provide climate finance"""
+- Requires countries to submit Nationally Determined Contributions (NDCs)"""
     return None
 
 def is_tip_query(q):
@@ -89,47 +88,94 @@ def extract_cities(q):
 async def process(query):
     q = query.lower()
 
-    # Tips
+    # 1. TIPS
     if is_tip_query(q):
         res, _ = await call_tool("Sustainability_Tips", query)
         if res:
             return res
         return "Simple tip: Reduce, reuse, recycle."
 
-    # Direct answers
+    # 2. DIRECT ANSWERS
     direct = get_direct_answer(query)
     if direct:
         return direct
 
-    # Comparison
+    # 3. HEALTH EFFECTS (must come before pollution)
+    health_keywords = [
+        'health', 'disease', 'respiratory', 'cancer', 'asthma', 'bronchitis',
+        'plastic pollution', 'microplastic', 'health effect', 'toxic', 'chemical'
+    ]
+    if any(w in q for w in health_keywords):
+        res, _ = await call_tool("Environmental_Effects_RAG", query)
+        if res and len(res) > 50:
+            return res
+        # Fallback for plastic pollution
+        if 'plastic' in q:
+            return """Health effects of plastic pollution:
+
+- Microplastics found in drinking water, food, and air
+- Chemical leaching (BPA, phthalates) causing endocrine disruption
+- Potential carcinogenic effects from plastic additives
+- Inflammation and oxidative stress from microplastic ingestion
+- Harm to digestive system from plastic particles
+
+Prevention: Reduce single-use plastics, use reusable containers, avoid heating food in plastic."""
+        return "Health effects information not available. Please rephrase your question."
+
+    # 4. COMPARISON
     if is_comparison_query(q):
         cities = extract_cities(q)
         if not cities:
-            cities = ["delhi", "mumbai"]
+            cities = ["delhi", "mumbai"] if "pollution" in q else ["delhi", "london"]
         parts = []
         for city in cities:
             pol, _ = await call_tool("Pollution_Health_Index", city)
             if pol:
                 parts.append(pol)
+            carb, _ = await call_tool("Carbon_Footprint_Calculator", city)
+            if carb:
+                parts.append(carb)
         if parts:
-            return "\n\n" + ("\n" + "-"*40 + "\n").join(parts)
+            return "\n\n" + ("\n" + "-"*50 + "\n").join(parts)
         return "Unable to compare."
 
-    # Pollution
-    if any(w in q for w in ["pollution", "aqi", "air quality"]):
+    # 5. POLLUTION / AQI
+    if any(w in q for w in ["aqi", "air quality", "pollution index", "pollution of"]):
         res, _ = await call_tool("Pollution_Health_Index", query)
         if res:
             return res
         return "Pollution data unavailable."
 
-    # Carbon
-    if any(w in q for w in ["carbon", "footprint"]):
+    # 6. CARBON FOOTPRINT
+    if any(w in q for w in ["carbon", "footprint", "co2", "emission"]):
         res, _ = await call_tool("Carbon_Footprint_Calculator", query)
         if res:
             return res
-        return "Carbon data unavailable."
+        return "Carbon footprint data unavailable."
 
-    return "Ask about pollution, carbon footprint, or sustainability tips."
+    # 7. POLICIES
+    if any(w in q for w in ["policy", "act", "regulation", "law", "treaty"]):
+        res, _ = await call_tool("Environmental_Policies_RAG", query)
+        if res and len(res) > 50:
+            return res
+        res2, _ = await call_tool("Web_Search", query)
+        if res2 and "unavailable" not in res2.lower():
+            return res2
+        return "Policy information not available."
+
+    # 8. WIKIPEDIA
+    if "wikipedia" in q:
+        res, _ = await call_tool("Wikipedia_Knowledge", query)
+        if res:
+            return res
+        return "No Wikipedia article found."
+
+    # 9. WEB SEARCH
+    res, _ = await call_tool("Web_Search", query)
+    if res and "unavailable" not in res.lower():
+        return res
+
+    return "I couldn't find information on that topic. Please ask about environmental policies, pollution, carbon footprint, or sustainability tips."
 
 def run(query):
     loop = asyncio.new_event_loop()
@@ -144,7 +190,7 @@ st.title("GreenMind - Environmental Advisor")
 if not st.session_state.messages:
     st.session_state.messages.append({
         "role": "assistant",
-        "content": "Ask about pollution, carbon footprint, or sustainability."
+        "content": "Ask about pollution, carbon footprint, health effects, or sustainability."
     })
 
 for msg in st.session_state.messages:
