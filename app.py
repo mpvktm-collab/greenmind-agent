@@ -1,4 +1,3 @@
-# app.py - COMPLETE WORKING VERSION
 import streamlit as st
 import sys
 import os
@@ -14,19 +13,7 @@ if "mcp_client" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-st.set_page_config(
-    page_title="GreenMind - Environmental Advisor",
-    layout="wide"
-)
-
-# ---------------- STYLE ----------------
-st.markdown("""
-<style>
-.stMarkdown h1,.stMarkdown h2,.stMarkdown h3 {
-    font-size:1rem !important;
-}
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="GreenMind", layout="wide")
 
 # ---------------- MCP ----------------
 async def get_client():
@@ -36,139 +23,117 @@ async def get_client():
         st.session_state.mcp_client = client
     return st.session_state.mcp_client
 
+
 async def call_tool(tool_name, query):
     try:
         client = await get_client()
         result = await asyncio.wait_for(
             client.call_tool(tool_name, input=query),
-            timeout=45
+            timeout=40
         )
         return result
-    except Exception as e:
-        print(f"Tool error: {e}")
+    except:
         return None
+
 
 def run_async(tool, query):
     return asyncio.run(call_tool(tool, query))
 
-# ---------------- DIRECT HEALTH ANSWERS ----------------
+
+# ---------------- VALIDATORS ----------------
+def is_aqi_response(text):
+    if not text:
+        return False
+    patterns = ["AQI:", "PM2.5", "ENVIRONMENTAL HEALTH INDEX"]
+    return any(p.lower() in text.lower() for p in patterns)
+
+
+# ---------------- DIRECT RESPONSES ----------------
 def plastic_health():
-    return """
-**Health Effects of Plastic Pollution**
+    return """Health Effects of Plastic Pollution
 
-**Microplastics**
-- Enter drinking water and food chain
-- Can accumulate in organs
-- Trigger inflammation
+Microplastics:
+- Enter food and water
+- Accumulate in organs
+- Cause inflammation
 
-**Chemical Exposure**
+Chemicals:
 - BPA disrupts hormones
-- Phthalates affect reproductive health
-- Some additives linked to cancer risk
+- Phthalates affect fertility
 
-**Long-Term Risks**
-- Endocrine disruption
-- Immune response changes
-- Potential neurological effects
-
-**Protection**
-- Avoid heating food in plastic
-- Use steel/glass containers
-- Reduce packaged food
+Prevention:
+- Avoid plastic containers for hot food
+- Use glass or steel
 """
 
-def air_health():
-    return """
-**Health Effects of Air Pollution**
 
-**Respiratory**
-- Asthma
-- Bronchitis
-- Reduced lung capacity
+def water_tips():
+    return """Sustainability Tips for Reducing Water Pollution
 
-**Cardiovascular**
-- Stroke
-- Heart disease
-- Elevated blood pressure
-
-**Protection**
-- Monitor AQI
-- Use air purifier
-- Limit outdoor activity on bad AQI days
+- Avoid dumping chemicals or oils into drains
+- Use eco-friendly detergents
+- Reduce plastic waste entering waterways
+- Properly dispose of medicines and hazardous waste
+- Conserve water to reduce wastewater load
 """
 
-def water_health():
-    return """
-**Health Effects of Water Pollution**
 
-**Diseases**
-- Cholera
-- Typhoid
-- Dysentery
+def paris():
+    return """Paris Agreement
 
-**Chemical Risks**
-- Lead poisoning
-- Arsenic toxicity
-- Nitrate contamination
-
-**Protection**
-- Filter water
-- Boil when uncertain
+- Global climate treaty (2015)
+- Limits warming below 2°C
+- Countries submit climate plans
 """
 
-def paris_agreement():
-    return """
-**Paris Agreement**
 
-International climate treaty adopted in 2015.
-
-**Goals**
-- Limit warming below 2°C
-- Pursue 1.5°C target
-
-**Key Mechanism**
-Countries submit climate action plans (NDCs)
-
-**Importance**
-Global coordination on emissions reduction
-"""
-
-# ---------------- QUERY ROUTER ----------------
+# ---------------- ROUTER ----------------
 def route_query(query):
     q = query.lower()
 
     # -------------------------------------------------
-    # 1. SPECIFIC HEALTH TYPES FIRST (NO TOOL CALL)
+    # 1. EXACT INTENT: SUSTAINABILITY TIPS (HIGHEST PRIORITY)
     # -------------------------------------------------
-    if "plastic" in q and ("health" in q or "effect" in q):
-        return plastic_health()
+    if "tip" in q or "advice" in q or "sustainability" in q:
 
-    if "air" in q and ("health" in q or "effect" in q):
-        return air_health()
+        # special case: water pollution tips
+        if "water" in q:
+            return water_tips()
 
-    if "water" in q and ("health" in q or "effect" in q):
-        return water_health()
+        result = run_async("Sustainability_Tips", query)
+
+        # reject wrong tool output
+        if result and not is_aqi_response(result):
+            return result
+
+        return "Use less plastic, conserve water, and recycle."
 
     # -------------------------------------------------
-    # 2. PARIS AGREEMENT
+    # 2. HEALTH (STRICT)
+    # -------------------------------------------------
+    if "health" in q or "effect" in q:
+
+        if "plastic" in q:
+            return plastic_health()
+
+        result = run_async("Environmental_Effects_RAG", query)
+
+        if result and not is_aqi_response(result):
+            return result
+
+        return "Pollution affects respiratory, cardiovascular, and immune systems."
+
+    # -------------------------------------------------
+    # 3. PARIS AGREEMENT
     # -------------------------------------------------
     if "paris agreement" in q:
-        return paris_agreement()
+        return paris()
 
     # -------------------------------------------------
-    # 3. SUSTAINABILITY TIPS
-    # -------------------------------------------------
-    tip_words = ["tip", "advice", "recycle", "home", "kitchen", "garden", "sustainable"]
-    if any(w in q for w in tip_words):
-        result = run_async("Sustainability_Tips", query)
-        return result or "Reduce, reuse, recycle."
-
-    # -------------------------------------------------
-    # 4. COMPARISON (CITY vs CITY)
+    # 4. COMPARISON
     # -------------------------------------------------
     if "compare" in q or " vs " in q:
-        cities = ["delhi", "mumbai", "chennai", "kolkata", "bangalore",
-                  "london", "new york", "paris", "tokyo", "beijing"]
+        cities = ["delhi", "mumbai", "london"]
         found = [c for c in cities if c in q]
 
         if len(found) < 2:
@@ -178,162 +143,72 @@ def route_query(query):
         for city in found:
             data = run_async("Pollution_Health_Index", city)
             if data:
-                # Extract just the AQI number for cleaner comparison
-                aqi_match = re.search(r'AQI:\s*(\d+)', data)
-                if aqi_match:
-                    aqi = aqi_match.group(1)
-                    results.append(f"**{city.upper()}:** AQI {aqi}")
-                else:
-                    results.append(f"**{city.upper()}:** Data available")
-            else:
-                results.append(f"**{city.upper()}:** Data unavailable")
+                aqi = re.search(r"AQI:\s*(\d+)", data)
+                if aqi:
+                    results.append(f"{city.upper()}: AQI {aqi.group(1)}")
 
-        if results:
-            return "### Pollution Comparison\n\n" + "\n".join(results)
-        return "Comparison unavailable."
+        return "\n".join(results) if results else "Comparison unavailable."
 
     # -------------------------------------------------
-    # 5. POLLUTION INDEX (AQI)
+    # 5. POLLUTION (STRICT TRIGGER)
     # -------------------------------------------------
-    pollution_terms = ["aqi", "pollution index", "air quality", "pollution level"]
-    if any(w in q for w in pollution_terms):
+    if any(x in q for x in ["aqi", "air quality", "pollution index"]):
         result = run_async("Pollution_Health_Index", query)
         if result:
             return result
-        # Try extracting city name for fallback
-        cities = ["delhi", "mumbai", "chennai", "london", "new york"]
-        for city in cities:
-            if city in q:
-                return f"Pollution data for {city.title()} is currently unavailable. Please try again later."
-        return "Pollution data unavailable. Please specify a city."
+        return "Pollution data unavailable."
 
     # -------------------------------------------------
-    # 6. CARBON FOOTPRINT
+    # 6. CARBON
     # -------------------------------------------------
-    carbon_terms = ["carbon", "footprint", "co2", "emission"]
-    if any(w in q for w in carbon_terms):
+    if any(x in q for x in ["carbon", "footprint", "co2"]):
         result = run_async("Carbon_Footprint_Calculator", query)
+
+        if result and not is_aqi_response(result):
+            return result
+
+        if "delhi" in q:
+            return "Delhi carbon footprint: ~2.1 tons CO2 per capita per year."
+
+        return "Carbon data unavailable."
+
+    # -------------------------------------------------
+    # 7. POLICIES
+    # -------------------------------------------------
+    if any(x in q for x in ["policy", "law", "treaty", "agreement"]):
+        result = run_async("Environmental_Policies_RAG", query)
         if result:
             return result
-        # Fallback for known cities
-        if "delhi" in q:
-            return """**Carbon Footprint - Delhi**
-
-Per Capita: 2.1 tons CO2/year
-Classification: 🟡 Moderate Impact
-
-Primary Sources:
-- Transportation
-- Industrial activities
-- Power generation
-
-*Color Guide: 🟢 Low (<2.0) | 🟡 Moderate (2-5) | 🔴 High (>5)*"""
-        if "mumbai" in q:
-            return """**Carbon Footprint - Mumbai**
-
-Per Capita: 1.8 tons CO2/year
-Classification: 🟢 Low Impact
-
-Primary Sources:
-- Transportation
-- Commercial buildings
-- Power generation
-
-*Color Guide: 🟢 Low (<2.0) | 🟡 Moderate (2-5) | 🔴 High (>5)*"""
-        return "Carbon footprint data unavailable. Try 'carbon footprint of Delhi'."
+        return "Policy information unavailable."
 
     # -------------------------------------------------
-    # 7. GENERAL HEALTH EFFECTS (fallback)
+    # 8. FALLBACK
     # -------------------------------------------------
-    health_words = ["health", "effect", "disease", "asthma", "cancer", "respiratory"]
-    if any(w in q for w in health_words):
-        return """
-**Environmental Pollution & Health**
+    return "Ask about pollution, carbon footprint, health effects, sustainability, or policies."
 
-Pollution affects human health in multiple ways:
-
-**Air Pollution**
-- Respiratory diseases (asthma, bronchitis)
-- Cardiovascular problems
-- Lung cancer
-
-**Water Pollution**
-- Waterborne diseases (cholera, typhoid)
-- Heavy metal poisoning
-- Long-term organ damage
-
-**Plastic Pollution**
-- Microplastic ingestion
-- Endocrine disruption from BPA
-- Potential carcinogenic effects
-
-*For specific information, ask about "plastic pollution health effects", "air pollution health effects", or "water pollution health effects".*
-"""
-
-    # -------------------------------------------------
-    # 8. POLICIES
-    # -------------------------------------------------
-    policy_words = ["policy", "law", "act", "agreement", "treaty", "regulation"]
-    if any(w in q for w in policy_words):
-        result = run_async("Environmental_Policies_RAG", query)
-        if result and len(result) > 50:
-            return result
-        return "Policy information currently unavailable. Please try a more specific query."
-
-    # -------------------------------------------------
-    # 9. WEB SEARCH (FALLBACK)
-    # -------------------------------------------------
-    web = run_async("Web_Search", query)
-    if web:
-        return web
-
-    return """Ask me about:
-
-• **Health effects** - "health effects of plastic pollution"
-• **Air quality** - "AQI of Delhi"
-• **Carbon footprint** - "carbon footprint of Mumbai"
-• **Policies** - "Paris Agreement"
-• **Sustainability tips** - "home sustainability tips"
-• **Comparisons** - "compare pollution in Delhi and Mumbai"
-"""
 
 # ---------------- UI ----------------
-st.title("🌿 GreenMind - Environmental Advisor")
+st.title("GreenMind")
 
 if not st.session_state.messages:
     st.session_state.messages.append({
         "role": "assistant",
-        "content": """Hello! I'm GreenMind. 🌍
-
-Ask me about:
-- **Health effects** of pollution (plastic, air, water)
-- **Air quality** (AQI) in any city
-- **Carbon footprint** of cities or activities
-- **Environmental policies** like the Paris Agreement
-- **Sustainability tips** for your home
-- **Comparisons** between cities"""
+        "content": "Ask about sustainability, pollution, health, or policies."
     })
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-prompt = st.chat_input("Ask a question...")
+prompt = st.chat_input("Ask something")
 
 if prompt:
-    st.session_state.messages.append({
-        "role": "user",
-        "content": prompt
-    })
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             response = route_query(prompt)
             st.markdown(response)
 
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": response
-    })
-
+    st.session_state.messages.append({"role": "assistant", "content": response})
     st.rerun()
