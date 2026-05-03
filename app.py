@@ -1,4 +1,4 @@
-# app.py - FINAL WORKING VERSION - HEALTH FIRST
+# app.py - COMPLETE REWRITE - HEALTH FIRST
 import streamlit as st
 import sys
 import os
@@ -16,9 +16,9 @@ if "mcp_connected" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-st.set_page_config(page_title="GreenMind", layout="wide")
+st.set_page_config(page_title="GreenMind - Environmental Advisor", layout="wide")
 
-# ---------- FIX FONT SIZE ----------
+# ---------- FONT FIX ----------
 st.markdown("""
 <style>
     /* Force all headings to normal size */
@@ -31,7 +31,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.sidebar.write("**Version:** HEALTH-FIRST")
+st.sidebar.write("**Version:** HEALTH-FIRST-v2")
 
 # ---------- MCP CLIENT ----------
 async def get_client():
@@ -51,154 +51,152 @@ async def call_tool(tool_name, query):
         )
         return result
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Tool error: {e}")
         return None
 
-# ---------- DIRECT ANSWER ----------
-def get_direct_answer(query):
+# ---------- HEALTH ANSWERS (DIRECT, NO TOOL CALL) ----------
+def get_health_answer(query):
     q = query.lower()
-    if "paris agreement" in q:
-        return """**Paris Agreement** - Legally binding international treaty on climate change adopted in 2015. Aims to limit global warming to well below 2°C, preferably to 1.5°C."""
-    return None
-
-# ---------- HEALTH FALLBACKS ----------
-def get_health_fallback(query):
-    q = query.lower()
+    
     if "plastic" in q:
         return """**Health Effects of Plastic Pollution**
 
-**Microplastics:**
-- Found in drinking water, seafood, and human blood
-- Can accumulate in organs and cause inflammation
+**Microplastics & Human Health:**
+- Microplastics have been found in drinking water, seafood, salt, and human blood
+- Particles can accumulate in organs causing inflammation
+- Nanoplastics may cross the blood-brain barrier
 
-**Chemical Leaching:**
-- BPA and phthalates disrupt hormones
-- Linked to reproductive issues and developmental problems
+**Chemical Hazards:**
+- BPA and phthalates leach from plastics and disrupt hormones
+- Linked to reproductive issues, diabetes, and developmental problems in children
+- Some plastic additives are probable carcinogens
 
 **Prevention:**
 - Reduce single-use plastics
-- Use glass or stainless steel containers
-- Never microwave plastic containers"""
+- Use glass, stainless steel, or ceramic containers
+- Never microwave food in plastic containers
+- Filter tap water to remove microplastics"""
     
     if "air" in q:
         return """**Health Effects of Air Pollution**
 
-**Respiratory:**
-- Asthma, bronchitis, COPD
-- Reduced lung function
+**Respiratory Effects:**
+- Asthma attacks and worsening COPD
+- Bronchitis and reduced lung function
+- Increased respiratory infections
 
-**Cardiovascular:**
+**Cardiovascular Effects:**
 - Heart attacks and stroke
 - High blood pressure
+- Irregular heartbeat
 
-**Vulnerable groups:** Children, elderly, pregnant women"""
+**Who is most vulnerable?**
+- Children, elderly, pregnant women
+- People with pre-existing heart or lung conditions
+
+**Protection:**
+- Check daily AQI before outdoor activities
+- Use air purifiers indoors
+- Wear N95 masks on high pollution days"""
+    
+    if "water" in q:
+        return """**Health Effects of Water Pollution**
+
+**Infectious Diseases:**
+- Cholera, typhoid, dysentery from contaminated water
+- Hepatitis A and giardiasis
+
+**Chemical Contamination:**
+- Lead causes developmental delays in children
+- Arsenic linked to skin lesions and cancer
+- Nitrates cause "blue baby syndrome" in infants
+
+**Protection:**
+- Drink filtered or boiled water
+- Proper sanitation and sewage treatment
+- Reduce chemical runoff from agriculture"""
     
     return None
 
-# ---------- ROUTING FUNCTIONS ----------
-def is_health_query(q):
-    # This MUST be checked FIRST
-    health_words = ['health', 'disease', 'respiratory', 'cancer', 'asthma', 'effect', 'effects']
-    return any(word in q for word in health_words)
-
-def is_tip_query(q):
-    tip_words = ['tip', 'advice', 'home', 'garden', 'kitchen']
-    return any(word in q for word in tip_words)
-
-def is_compare_query(q):
-    return 'compare' in q or ' vs ' in q
-
-def is_pollution_query(q):
-    # Only check if NOT a health query
-    pollution_words = ['aqi', 'air quality', 'pollution index', 'pollution level']
-    return any(word in q for word in pollution_words)
-
-def is_carbon_query(q):
-    carbon_words = ['carbon', 'footprint', 'co2', 'emission']
-    return any(word in q for word in carbon_words)
-
-def is_policy_query(q):
-    policy_words = ['policy', 'act', 'law', 'treaty', 'agreement']
-    return any(word in q for word in policy_words)
-
-# ---------- MAIN PROCESSING - ORDER IS CRITICAL ----------
-async def process(query):
+# ---------- QUERY ROUTING - SIMPLE IF/ELSE CHAIN ----------
+def route_query(query):
     q = query.lower()
     
-    # PRIORITY 1: HEALTH - MUST BE ABSOLUTELY FIRST
-    if is_health_query(q):
-        result = await call_tool("Environmental_Effects_RAG", query)
+    # RULE 1 - HEALTH EFFECTS (ABSOLUTE HIGHEST PRIORITY)
+    # Check for ANY health-related word
+    health_words = ['health', 'effect', 'disease', 'respiratory', 'cancer', 'asthma', 'bronchitis', 'toxic']
+    if any(word in q for word in health_words):
+        # First try the RAG tool
+        result = asyncio.run(call_tool("Environmental_Effects_RAG", query))
         if result and len(result) > 50:
             return result
-        fallback = get_health_fallback(query)
-        if fallback:
-            return fallback
+        # Fallback to direct answers
+        direct = get_health_answer(query)
+        if direct:
+            return direct
         return "Health effects information is currently unavailable."
     
-    # PRIORITY 2: TIPS
-    if is_tip_query(q):
-        result = await call_tool("Sustainability_Tips", query)
+    # RULE 2 - TIPS
+    tip_words = ['tip', 'advice', 'home', 'garden', 'kitchen', 'recycle']
+    if any(word in q for word in tip_words):
+        result = asyncio.run(call_tool("Sustainability_Tips", query))
         if result:
             return result
         return "Reduce, reuse, recycle!"
     
-    # PRIORITY 3: DIRECT ANSWER
-    direct = get_direct_answer(query)
-    if direct:
-        return direct
+    # RULE 3 - PARIS AGREEMENT
+    if "paris agreement" in q:
+        return """**Paris Agreement** - Legally binding international treaty on climate change adopted in 2015. Aims to limit global warming to well below 2°C, preferably to 1.5°C."""
     
-    # PRIORITY 4: COMPARE
-    if is_compare_query(q):
-        cities = ['delhi', 'mumbai', 'chennai', 'london']
+    # RULE 4 - COMPARISON
+    if 'compare' in q or ' vs ' in q:
+        cities = ['delhi', 'mumbai', 'chennai', 'london', 'new york']
         found = [c for c in cities if c in q]
         if not found:
             found = ['delhi', 'mumbai']
         results = []
         for city in found:
-            pol = await call_tool("Pollution_Health_Index", city)
+            pol = asyncio.run(call_tool("Pollution_Health_Index", city))
             if pol:
                 results.append(f"--- {city.upper()} ---\n{pol}")
         if results:
             return "\n\n".join(results)
         return "Comparison data unavailable."
     
-    # PRIORITY 5: POLLUTION
-    if is_pollution_query(q):
-        result = await call_tool("Pollution_Health_Index", query)
+    # RULE 5 - POLLUTION INDEX
+    # Only trigger if query has AQI or pollution level terms
+    pollution_terms = ['aqi', 'air quality', 'pollution index', 'pollution level']
+    if any(word in q for word in pollution_terms):
+        result = asyncio.run(call_tool("Pollution_Health_Index", query))
         if result:
             return result
         return "Pollution data unavailable."
     
-    # PRIORITY 6: CARBON
-    if is_carbon_query(q):
-        result = await call_tool("Carbon_Footprint_Calculator", query)
+    # RULE 6 - CARBON FOOTPRINT
+    carbon_words = ['carbon', 'footprint', 'co2', 'emission']
+    if any(word in q for word in carbon_words):
+        result = asyncio.run(call_tool("Carbon_Footprint_Calculator", query))
         if result:
             return result
         return "Carbon footprint data unavailable."
     
-    # PRIORITY 7: POLICIES
-    if is_policy_query(q):
-        result = await call_tool("Environmental_Policies_RAG", query)
-        if result:
+    # RULE 7 - POLICIES
+    policy_words = ['policy', 'act', 'law', 'treaty', 'agreement', 'regulation']
+    if any(word in q for word in policy_words):
+        result = asyncio.run(call_tool("Environmental_Policies_RAG", query))
+        if result and len(result) > 50:
             return result
-        web = await call_tool("Web_Search", query)
+        web = asyncio.run(call_tool("Web_Search", query))
         if web:
             return web
         return "Policy information not available."
     
-    # PRIORITY 8: WEB SEARCH
-    web = await call_tool("Web_Search", query)
+    # RULE 8 - WEB SEARCH
+    web = asyncio.run(call_tool("Web_Search", query))
     if web:
         return web
     
     return "Ask me about pollution, carbon footprint, health effects, policies, or sustainability tips."
-
-def run(query):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    result = loop.run_until_complete(process(query))
-    loop.close()
-    return result
 
 # ---------- UI ----------
 st.title("GreenMind - Environmental Advisor")
@@ -206,7 +204,7 @@ st.title("GreenMind - Environmental Advisor")
 if not st.session_state.messages:
     st.session_state.messages.append({
         "role": "assistant",
-        "content": "Hello! Ask me about:\n• Health effects of pollution\n• Pollution levels (AQI)\n• Carbon footprint\n• Environmental policies\n• Sustainability tips"
+        "content": "Hello! Ask me about:\n\n• Health effects of pollution\n• Air quality (AQI)\n• Carbon footprint\n• Environmental policies\n• Sustainability tips"
     })
 
 for msg in st.session_state.messages:
@@ -218,7 +216,7 @@ if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            response = run(prompt)
+            response = route_query(prompt)
             st.markdown(response)
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.rerun()
