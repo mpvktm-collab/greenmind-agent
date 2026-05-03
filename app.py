@@ -1,4 +1,4 @@
-# app.py - FINAL WORKING VERSION
+# app.py - FINAL WORKING VERSION - HEALTH FIRST
 import streamlit as st
 import sys
 import os
@@ -21,7 +21,7 @@ st.set_page_config(page_title="GreenMind", layout="wide")
 # ---------- FIX FONT SIZE ----------
 st.markdown("""
 <style>
-    /* Make all text normal size */
+    /* Force all headings to normal size */
     .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4,
     .stChatMessage h1, .stChatMessage h2, .stChatMessage h3,
     h1, h2, h3, h4, h5, h6 {
@@ -31,8 +31,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- VERSION ----------
-st.sidebar.write("**Version:** FINAL-2026-04-27")
+st.sidebar.write("**Version:** HEALTH-FIRST")
 
 # ---------- MCP CLIENT ----------
 async def get_client():
@@ -52,18 +51,65 @@ async def call_tool(tool_name, query):
         )
         return result
     except Exception as e:
+        print(f"Error: {e}")
         return None
 
-# ---------- ROUTING - SIMPLE AND CLEAR ----------
+# ---------- DIRECT ANSWER ----------
+def get_direct_answer(query):
+    q = query.lower()
+    if "paris agreement" in q:
+        return """**Paris Agreement** - Legally binding international treaty on climate change adopted in 2015. Aims to limit global warming to well below 2°C, preferably to 1.5°C."""
+    return None
+
+# ---------- HEALTH FALLBACKS ----------
+def get_health_fallback(query):
+    q = query.lower()
+    if "plastic" in q:
+        return """**Health Effects of Plastic Pollution**
+
+**Microplastics:**
+- Found in drinking water, seafood, and human blood
+- Can accumulate in organs and cause inflammation
+
+**Chemical Leaching:**
+- BPA and phthalates disrupt hormones
+- Linked to reproductive issues and developmental problems
+
+**Prevention:**
+- Reduce single-use plastics
+- Use glass or stainless steel containers
+- Never microwave plastic containers"""
+    
+    if "air" in q:
+        return """**Health Effects of Air Pollution**
+
+**Respiratory:**
+- Asthma, bronchitis, COPD
+- Reduced lung function
+
+**Cardiovascular:**
+- Heart attacks and stroke
+- High blood pressure
+
+**Vulnerable groups:** Children, elderly, pregnant women"""
+    
+    return None
+
+# ---------- ROUTING FUNCTIONS ----------
 def is_health_query(q):
-    health_words = ['health', 'effect', 'disease', 'respiratory', 'cancer', 'asthma']
+    # This MUST be checked FIRST
+    health_words = ['health', 'disease', 'respiratory', 'cancer', 'asthma', 'effect', 'effects']
     return any(word in q for word in health_words)
 
 def is_tip_query(q):
-    tip_words = ['tip', 'advice', 'home', 'garden', 'kitchen', 'recycle']
+    tip_words = ['tip', 'advice', 'home', 'garden', 'kitchen']
     return any(word in q for word in tip_words)
 
+def is_compare_query(q):
+    return 'compare' in q or ' vs ' in q
+
 def is_pollution_query(q):
+    # Only check if NOT a health query
     pollution_words = ['aqi', 'air quality', 'pollution index', 'pollution level']
     return any(word in q for word in pollution_words)
 
@@ -71,37 +117,39 @@ def is_carbon_query(q):
     carbon_words = ['carbon', 'footprint', 'co2', 'emission']
     return any(word in q for word in carbon_words)
 
-def is_compare_query(q):
-    return 'compare' in q or ' vs ' in q or 'versus' in q
-
 def is_policy_query(q):
-    policy_words = ['policy', 'act', 'law', 'treaty', 'agreement', 'regulation']
+    policy_words = ['policy', 'act', 'law', 'treaty', 'agreement']
     return any(word in q for word in policy_words)
 
+# ---------- MAIN PROCESSING - ORDER IS CRITICAL ----------
 async def process(query):
     q = query.lower()
     
-    # 1. HEALTH - FIRST PRIORITY
+    # PRIORITY 1: HEALTH - MUST BE ABSOLUTELY FIRST
     if is_health_query(q):
         result = await call_tool("Environmental_Effects_RAG", query)
-        if result:
+        if result and len(result) > 50:
             return result
-        return "Health effects information is currently unavailable. Please try again."
+        fallback = get_health_fallback(query)
+        if fallback:
+            return fallback
+        return "Health effects information is currently unavailable."
     
-    # 2. TIPS
+    # PRIORITY 2: TIPS
     if is_tip_query(q):
         result = await call_tool("Sustainability_Tips", query)
         if result:
             return result
-        return "Simple tip: Reduce, reuse, recycle."
+        return "Reduce, reuse, recycle!"
     
-    # 3. DIRECT ANSWER FOR COMMON QUERIES
-    if "paris agreement" in q:
-        return """Paris Agreement - Legally binding international treaty on climate change adopted in 2015. Aims to limit global warming to well below 2°C, preferably to 1.5°C."""
+    # PRIORITY 3: DIRECT ANSWER
+    direct = get_direct_answer(query)
+    if direct:
+        return direct
     
-    # 4. COMPARE
+    # PRIORITY 4: COMPARE
     if is_compare_query(q):
-        cities = ['delhi', 'mumbai', 'chennai', 'london', 'new york']
+        cities = ['delhi', 'mumbai', 'chennai', 'london']
         found = [c for c in cities if c in q]
         if not found:
             found = ['delhi', 'mumbai']
@@ -114,31 +162,35 @@ async def process(query):
             return "\n\n".join(results)
         return "Comparison data unavailable."
     
-    # 5. POLLUTION
+    # PRIORITY 5: POLLUTION
     if is_pollution_query(q):
         result = await call_tool("Pollution_Health_Index", query)
         if result:
             return result
         return "Pollution data unavailable."
     
-    # 6. CARBON
+    # PRIORITY 6: CARBON
     if is_carbon_query(q):
         result = await call_tool("Carbon_Footprint_Calculator", query)
         if result:
             return result
         return "Carbon footprint data unavailable."
     
-    # 7. POLICIES
+    # PRIORITY 7: POLICIES
     if is_policy_query(q):
         result = await call_tool("Environmental_Policies_RAG", query)
-        if result and len(result) > 50:
+        if result:
             return result
         web = await call_tool("Web_Search", query)
         if web:
             return web
         return "Policy information not available."
     
-    # 8. FALLBACK
+    # PRIORITY 8: WEB SEARCH
+    web = await call_tool("Web_Search", query)
+    if web:
+        return web
+    
     return "Ask me about pollution, carbon footprint, health effects, policies, or sustainability tips."
 
 def run(query):
@@ -154,7 +206,7 @@ st.title("GreenMind - Environmental Advisor")
 if not st.session_state.messages:
     st.session_state.messages.append({
         "role": "assistant",
-        "content": "Hello! Ask me about:\n• Pollution levels (AQI)\n• Carbon footprint\n• Health effects\n• Environmental policies\n• Sustainability tips"
+        "content": "Hello! Ask me about:\n• Health effects of pollution\n• Pollution levels (AQI)\n• Carbon footprint\n• Environmental policies\n• Sustainability tips"
     })
 
 for msg in st.session_state.messages:
