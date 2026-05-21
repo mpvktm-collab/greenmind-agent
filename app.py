@@ -1,9 +1,8 @@
-# app.py - Final Version with Fixed Sustainability Tips Routing
+# app.py - Complete Working Version for Cloud Deployment
 import streamlit as st
 import requests
 import re
 import os
-
 from datetime import datetime
 
 # ---------------- SESSION ----------------
@@ -117,18 +116,6 @@ st.markdown(
         font-weight: bold;
         margin: 0.4rem 0;
     }
-    .tips-result {
-        font-size: 0.95rem;
-        line-height: 1.8;
-    }
-    .tips-result .tips-heading {
-        font-size: 1rem;
-        font-weight: bold;
-        color: #2E7D32;
-        margin: 0.6rem 0 0.3rem 0;
-        border-bottom: 1px solid #c8e6c9;
-        padding-bottom: 0.2rem;
-    }
     [data-testid="stSidebar"] {
         margin-top: 80px;
     }
@@ -164,7 +151,6 @@ st.markdown(
 )
 
 # ---------------- MCP CONFIG ----------------
-# This will use the environment variable if set, otherwise use localhost for testing
 MCP_URL = os.getenv("MCP_URL", "http://127.0.0.1:8000")
 
 
@@ -215,52 +201,6 @@ def format_carbon_response(text):
             cleaned_lines.append(line)
     inner_html = "<br>".join(cleaned_lines)
     return '<div class="carbon-result" style="font-size:0.95rem; line-height:1.7;">' + inner_html + "</div>"
-
-
-def format_sustainability_response(text):
-    """
-    Converts the raw tool output into controlled HTML so that
-    headings never render at browser h1/h2/h3 size.
-    - Lines starting with # / ## / ### become small bold green labels.
-    - Bullet lines (* or -) become list items.
-    - Plain lines become paragraphs.
-    """
-    if not text:
-        return text
-    lines = text.split("\n")
-    html_parts = ['<div class="tips-result">']
-    in_list = False
-    for line in lines:
-        line = line.strip()
-        if not line:
-            if in_list:
-                html_parts.append("</ul>")
-                in_list = False
-            continue
-        # Heading lines - render as small bold label, never as h1/h2/h3
-        if re.match(r"^#{1,3}\s+", line):
-            if in_list:
-                html_parts.append("</ul>")
-                in_list = False
-            heading_text = re.sub(r"^#+\s+", "", line)
-            html_parts.append('<div class="tips-heading">' + heading_text + "</div>")
-        # Bullet lines
-        elif re.match(r"^[\*\-]\s+", line):
-            if not in_list:
-                html_parts.append('<ul style="margin:0.3rem 0 0.3rem 1.2rem;padding:0;">')
-                in_list = True
-            item_text = re.sub(r"^[\*\-]\s+", "", line)
-            html_parts.append('<li style="margin-bottom:0.3rem;">' + item_text + "</li>")
-        # Plain text
-        else:
-            if in_list:
-                html_parts.append("</ul>")
-                in_list = False
-            html_parts.append('<p style="margin:0.3rem 0;">' + line + "</p>")
-    if in_list:
-        html_parts.append("</ul>")
-    html_parts.append("</div>")
-    return "".join(html_parts)
 
 
 def format_pollution_response(text):
@@ -412,34 +352,6 @@ KNOWN_CITIES = [
     "london", "new york", "tokyo", "beijing", "paris"
 ]
 
-# Maps detected intent phrases to explicit tool queries so the MCP tool
-# receives a clear, unambiguous request and returns the right category.
-SUSTAINABILITY_QUERY_MAP = [
-    (["how can i reduce", "how to reduce", "reduce my carbon",
-      "lower my carbon", "reduce my footprint", "ways to reduce",
-      "tips to reduce", "carbon footprint reduction"],
-     "general tips to reduce carbon footprint at home and daily life"),
-    (["recycle", "zero waste", "reuse", "compost", "plastic"],
-     "tips for recycling and reducing waste at home"),
-    (["solar", "renewable", "energy"],
-     "tips for using renewable energy and saving electricity at home"),
-    (["water saving"],
-     "tips for saving water at home"),
-]
-
-
-def resolve_sustainability_query(q, original_query):
-    """
-    Returns a clean, explicit query string to send to the Sustainability_Tips tool.
-    If the query matches a known intent, returns a rewritten query.
-    Otherwise returns the original query unchanged.
-    """
-    for triggers, rewritten in SUSTAINABILITY_QUERY_MAP:
-        for trigger in triggers:
-            if trigger in q:
-                return rewritten
-    return original_query
-
 
 def is_sustainability_query(q):
     for phrase in PHRASE_SUSTAINABILITY:
@@ -466,7 +378,7 @@ def route_query(query):
     cities_found = list(dict.fromkeys([city for city in KNOWN_CITIES if city in q]))
     is_multi_city = len(cities_found) >= 2
 
-    # 3. COMPARISON - before sustainability to prevent misrouting
+    # 3. COMPARISON
     if "compare" in q or " vs " in q or is_multi_city:
         is_carbon = any(word in q for word in ["carbon", "footprint", "co2", "emission"])
         found = cities_found[:2]
@@ -475,7 +387,7 @@ def route_query(query):
             return (
                 "Please specify two cities to compare. Found: "
                 + (", ".join(found) if found else "none")
-                + ". Try 'compare carbon footprint of Delhi and Mumbai'."
+                + ". Try 'compare pollution in Delhi and Mumbai'."
             )
 
         title = "Carbon Footprint Comparison" if is_carbon else "Air Quality Comparison"
@@ -497,39 +409,35 @@ def route_query(query):
                 + cards_html
                 + "</div></div>"
             )
-
-        return "No comparison data available for " + ", ".join(found).upper() + "."
+        return "No comparison data available."
 
     # 4. SUSTAINABILITY TIPS
-    #    Rewrites the query before calling the tool so the tool returns
-    #    the correct category. Formats the response to suppress big headings.
     if is_sustainability_query(q):
-        clean_query = resolve_sustainability_query(q, query)
-        result = call_tool("Sustainability_Tips", clean_query)
+        result = call_tool("Sustainability_Tips", query)
         if result:
-            return format_sustainability_response(result)
+            return result
         return "No sustainability tips found."
 
-    # 5. CARBON FOOTPRINT (single city only)
+    # 5. CARBON FOOTPRINT (single city)
     if any(word in q for word in ["carbon", "footprint", "co2", "emission"]):
         result = call_tool("Carbon_Footprint_Calculator", query)
         if result:
             return format_carbon_response(result)
-        return "No carbon footprint data found for the specified location."
+        return "No carbon footprint data found."
 
     # 6. POLLUTION / AQI
     if any(word in q for word in ["pollution", "aqi", "air quality", "pollution index"]):
         result = call_tool("Pollution_Health_Index", query)
         if result:
             return format_pollution_response(result)
-        return "No pollution data found for the specified location."
+        return "No pollution data found."
 
     # 7. POLICIES
     if any(word in q for word in ["policy", "act", "law", "treaty", "agreement", "regulation", "protocol"]):
         result = call_tool("Environmental_Policies_RAG", query)
         if result and len(result) > 50:
             return result
-        return "No policy information found in the knowledge base."
+        return "No policy information found."
 
     # 8. WEB SEARCH FALLBACK
     result = call_tool("Web_Search", query)
