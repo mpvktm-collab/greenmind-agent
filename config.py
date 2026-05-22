@@ -14,7 +14,8 @@ class Config:
             raise ValueError("GEMINI_API_KEY not found. Set it in environment variables.")
 
     # Model config
-    MODEL_NAME = "gemini-1.5-pro"
+    #MODEL_NAME = "gemini-1.5-pro" 
+    MODEL_NAME = "gemini-2.5-flash"
     EMBEDDING_MODEL = "models/gemini-embedding-001"
     TEMPERATURE = 0.7
 

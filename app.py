@@ -1,7 +1,4 @@
 # app.py - GreenMind for Render deployment
-# Strategy: v1 working logic kept exactly intact.
-#           v2 additions: MCP_URL env var, debug logging, fixed header CSS,
-#           sustainability routing fix, card builder helpers.
  
 import streamlit as st
 import requests
@@ -20,9 +17,11 @@ st.markdown("""
 <style>
     header[data-testid="stHeader"] { display: none; }
  
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400&display=swap');
+ 
     .main-header {
         background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 50%, #4CAF50 100%);
-        padding: 1rem;
+        padding: 1rem 1rem 0.9rem 1rem;
         border-radius: 15px;
         color: white;
         text-align: center;
@@ -30,24 +29,33 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 999;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
     }
-    .main-header h1 {
-        font-size: 2rem;
+    .main-header .brand {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
         margin-bottom: 0.2rem;
-        color: white;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
-    .main-header h3 {
-        font-size: 0.85rem;
-        font-weight: 400;
-        font-style: italic;
-        margin-bottom: 0;
-        background-color: rgba(0,0,0,0.25);
-        display: inline-block;
-        padding: 0.2rem 1rem;
-        border-radius: 30px;
-        color: #FFFFFF;
+    .main-header .leaf { font-size: 1.7rem; line-height: 1; }
+    .main-header h1 {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 2.1rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin: 0;
+        color: #ffffff;
+        text-shadow: 1px 2px 8px rgba(0,0,0,0.25);
+    }
+    .main-header .tagline {
+        font-family: 'Lato', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 300;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.80);
+        margin: 0;
     }
     .stChatMessage {
         background-color: #ffffff;
@@ -391,8 +399,9 @@ def route_query(query):
  
         if cards_html:
             return (
-                f'<div style="text-align:center;margin:20px 0;">'
-                f'<h2 style="color:#2E7D32;margin-bottom:20px;">{title}</h2>'
+                f'<div style="text-align:center;margin:20px 0;font-family:sans-serif;">'
+                f'<div style="color:#2E7D32;margin-bottom:16px;font-size:1rem;'
+                f'font-weight:700;letter-spacing:0.03em;">{title}</div>'
                 f'<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;">'
                 f'{cards_html}'
                 f'</div>'
@@ -430,8 +439,11 @@ def route_query(query):
 # ── UI ────────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="main-header">
-    <h1>GreenMind</h1>
-    <h3>Your Environmental Sustainability Advisor</h3>
+    <div class="brand">
+        <span class="leaf">🌿</span>
+        <h1>GreenMind</h1>
+    </div>
+    <p class="tagline">Your Environmental Sustainability Advisor</p>
 </div>
 """, unsafe_allow_html=True)
  
@@ -472,15 +484,7 @@ if not st.session_state.messages:
             f'<div class="quote-text">"{today_quote["text"]}"</div>'
             f'<div class="quote-author">— {today_quote["author"]}</div>'
             f'</div>\n\n'
-            "Hello! I'm GreenMind.\n\n"
-            "Ask me about:\n"
-            "- **Pollution Index** (AQI) - \"what is the pollution index of delhi\"\n"
-            "- **Carbon Footprint** - \"carbon footprint of mumbai\"\n"
-            "- **Health Effects** - \"health effects of plastic pollution\"\n"
-            "- **Environmental Policies** - \"Paris Agreement\"\n"
-            "- **Sustainability Tips** - \"sustainability tips for home\"\n"
-            "- **Comparisons** - \"compare pollution in delhi and mumbai\"\n\n"
-            "How can I help protect our planet today?"
+            "Hello! I'm **GreenMind** 🌍 — how can I help protect our planet today?"
         ),
     })
  
@@ -506,4 +510,3 @@ st.markdown("""
     GreenMind - Every small action counts towards a greener planet
 </div>
 """, unsafe_allow_html=True)
- 
