@@ -315,23 +315,42 @@ def format_pollution_response(text: str) -> str:
  
 # ─────────────────────────────────────────────
 # COMPARISON CARD BUILDERS
+# All styles are 100% inline — no CSS classes — so Streamlit markdown
+# rendering cannot override font sizes or layout.
 # ─────────────────────────────────────────────
-def _card_shell(city: str, border_color: str, body_html: str) -> str:
+ 
+CARD_STYLE = (
+    "display:inline-block;"
+    "vertical-align:top;"
+    "width:170px;"
+    "background:#ffffff;"
+    "border-radius:12px;"
+    "padding:14px 12px 12px 12px;"
+    "margin:6px;"
+    "box-shadow:0 1px 6px rgba(0,0,0,0.10);"
+    "text-align:center;"
+    "font-family:sans-serif;"
+    "font-size:12px;"          # base for everything inside the card
+    "line-height:1.4;"
+)
+ 
+def _unavailable_card(city: str) -> str:
     return (
-        f'<div class="comparison-card" style="border-top:4px solid {border_color};font-size:0.82rem;">'
-        f'<div style="font-size:0.78rem;font-weight:700;letter-spacing:0.06em;'
-        f'color:#555;text-transform:uppercase;margin-bottom:6px;">{city}</div>'
-        f'{body_html}'
+        f'<div style="{CARD_STYLE}border-top:4px solid #9e9e9e;">'
+        f'<div style="font-size:11px;font-weight:700;letter-spacing:0.07em;'
+        f'color:#777;text-transform:uppercase;margin-bottom:8px;">{city}</div>'
+        f'<div style="color:#999;font-size:11px;">Data unavailable</div>'
         f'</div>'
     )
  
  
 def build_carbon_card(city: str, data) -> str:
     if not data:
-        return _card_shell(city, "#9e9e9e", '<div style="color:#666;">Data unavailable</div>')
+        return _unavailable_card(city)
     m = re.search(r"(\d+\.?\d*)\s*tons", data)
     if not m:
-        return _card_shell(city, "#9e9e9e", '<div style="color:#666;">Data unavailable</div>')
+        return _unavailable_card(city)
+ 
     val = float(m.group(1))
     if val <= 2.0:
         color, label = "#4CAF50", "Low Impact"
@@ -339,36 +358,99 @@ def build_carbon_card(city: str, data) -> str:
         color, label = "#FFC107", "Moderate Impact"
     else:
         color, label = "#F44336", "High Impact"
-    body = (
-        f'<div style="font-size:1.15rem;font-weight:700;color:{color};margin:4px 0 2px;">{val}</div>'
-        f'<div style="font-size:0.72rem;color:#888;margin-bottom:6px;">tons CO₂/year</div>'
-        f'<div style="background:{color};color:white;padding:3px 8px;border-radius:20px;'
-        f'font-size:0.72rem;display:inline-block;">{label}</div>'
-        f'<div style="margin-top:8px;font-size:0.65rem;color:#aaa;line-height:1.5;">'
-        f'Low &lt;2 | Moderate 2–5 | High &gt;5 tons/yr</div>'
+    badge_text = "white" if label != "Moderate Impact" else "#333"
+ 
+    return (
+        f'<div style="{CARD_STYLE}border-top:4px solid {color};">'
+        # city name
+        f'<div style="font-size:11px;font-weight:700;letter-spacing:0.07em;'
+        f'color:#555;text-transform:uppercase;margin-bottom:8px;">{city}</div>'
+        # big number
+        f'<div style="font-size:22px;font-weight:700;color:{color};'
+        f'line-height:1.1;margin-bottom:2px;">{val}</div>'
+        # unit
+        f'<div style="font-size:10px;color:#999;margin-bottom:8px;">tons CO&#8322;/year</div>'
+        # colour badge
+        f'<div style="display:inline-block;background:{color};color:{badge_text};'
+        f'font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;'
+        f'margin-bottom:8px;">{label}</div>'
+        # legend
+        f'<div style="font-size:9px;color:#bbb;line-height:1.5;margin-top:4px;">'
+        f'Low &lt;2 &nbsp;|&nbsp; Moderate 2–5 &nbsp;|&nbsp; High &gt;5 tons/yr</div>'
+        f'</div>'
     )
-    return _card_shell(city, color, body)
  
  
 def build_aqi_card(city: str, data) -> str:
     if not data:
-        return _card_shell(city, "#9e9e9e", '<div style="color:#666;">Data unavailable</div>')
-    m = re.search(r"AQI:\s*(\d+)", data)
+        return _unavailable_card(city)
+    # Accept "AQI: 123" or "AQI : 123" or plain integer on same line
+    m = re.search(r"AQI\s*:\s*(\d+)", data, re.IGNORECASE)
     if not m:
-        return _card_shell(city, "#9e9e9e", '<div style="color:#666;">Data unavailable</div>')
-    aqi   = int(m.group(1))
-    color = get_aqi_color(aqi)
-    label = get_aqi_label(aqi)
-    text_color = "black" if aqi <= 100 else "white"
-    body = (
-        f'<div style="font-size:1.15rem;font-weight:700;color:{color};margin:4px 0 6px;">{aqi}</div>'
-        f'<div style="background:{color};color:{text_color};padding:3px 8px;border-radius:20px;'
-        f'font-size:0.72rem;display:inline-block;">{label}</div>'
-        f'<div style="margin-top:8px;font-size:0.65rem;color:#aaa;line-height:1.6;">'
-        f'0–50 Good | 51–100 Moderate | 101–150 Sensitive<br>'
-        f'151–200 Unhealthy | 201–300 Very Unhealthy | 300+ Hazardous</div>'
+        # fallback: grab first standalone number if tool returns bare value
+        m = re.search(r"\b(\d{2,3})\b", data)
+    if not m:
+        return _unavailable_card(city)
+ 
+    aqi        = int(m.group(1))
+    color      = get_aqi_color(aqi)
+    label      = get_aqi_label(aqi)
+    badge_text = "black" if aqi <= 100 else "white"
+ 
+    # optional PM values
+    pm25_m = re.search(r"PM2\.5\s*:\s*(\d+\.?\d*)", data, re.IGNORECASE)
+    pm10_m = re.search(r"PM10\s*:\s*(\d+\.?\d*)",  data, re.IGNORECASE)
+    pm_rows = ""
+    if pm25_m:
+        pm_rows += (
+            f'<div style="display:flex;justify-content:space-between;'
+            f'font-size:10px;color:#777;padding:2px 0;border-bottom:1px solid #f0f0f0;">'
+            f'<span>PM2.5</span><span style="font-weight:600;">{pm25_m.group(1)} µg/m³</span></div>'
+        )
+    if pm10_m:
+        pm_rows += (
+            f'<div style="display:flex;justify-content:space-between;'
+            f'font-size:10px;color:#777;padding:2px 0;">'
+            f'<span>PM10</span><span style="font-weight:600;">{pm10_m.group(1)} µg/m³</span></div>'
+        )
+    pm_section = (
+        f'<div style="margin:6px 0 8px 0;text-align:left;">{pm_rows}</div>'
+        if pm_rows else ""
     )
-    return _card_shell(city, color, body)
+ 
+    # mini progress bar
+    fill_pct = min(100, round(aqi / 300 * 100, 1))
+    bar = (
+        f'<div style="background:#eee;border-radius:6px;height:5px;width:100%;margin:6px 0 8px 0;">'
+        f'<div style="background:{color};width:{fill_pct}%;height:5px;border-radius:6px;"></div>'
+        f'</div>'
+    )
+ 
+    return (
+        f'<div style="{CARD_STYLE}border-top:4px solid {color};">'
+        # city name
+        f'<div style="font-size:11px;font-weight:700;letter-spacing:0.07em;'
+        f'color:#555;text-transform:uppercase;margin-bottom:8px;">{city}</div>'
+        # AQI number
+        f'<div style="font-size:28px;font-weight:700;color:{color};'
+        f'line-height:1.1;margin-bottom:2px;">{aqi}</div>'
+        f'<div style="font-size:10px;color:#999;margin-bottom:6px;">AQI</div>'
+        # badge
+        f'<div style="display:inline-block;background:{color};color:{badge_text};'
+        f'font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;'
+        f'margin-bottom:6px;">{label}</div>'
+        # progress bar
+        f'{bar}'
+        # PM rows (if available)
+        f'{pm_section}'
+        # legend
+        f'<div style="font-size:9px;color:#bbb;line-height:1.6;">'
+        f'0–50 Good &nbsp;|&nbsp; 51–100 Moderate<br>'
+        f'101–150 Sensitive &nbsp;|&nbsp; 151–200 Unhealthy<br>'
+        f'201–300 Very Unhealthy &nbsp;|&nbsp; 300+ Hazardous'
+        f'</div>'
+        f'</div>'
+    )
  
  
 # ─────────────────────────────────────────────
@@ -475,9 +557,10 @@ def route_query(query: str) -> str:
  
         if cards_html:
             return (
-                '<div class="comparison-container">'
-                f'<div class="comparison-title">{title}</div>'
-                '<div class="comparison-wrapper">'
+                '<div style="text-align:center;margin:12px 0;font-family:sans-serif;">'
+                f'<div style="font-size:11px;font-weight:700;letter-spacing:0.08em;'
+                f'text-transform:uppercase;color:#2E7D32;margin-bottom:12px;">{title}</div>'
+                '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;">'
                 f'{cards_html}'
                 '</div></div>'
             )
@@ -623,3 +706,4 @@ st.markdown(
     '<div class="footer">🌱 GreenMind — Every small action counts towards a greener planet</div>',
     unsafe_allow_html=True,
 )
+ 
