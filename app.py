@@ -1,5 +1,15 @@
-# app.py - GreenMind Final  Version
-
+# app.py - GreenMind Final Merged Version
+# Combines the best of both versions:
+#   - Fixed sticky/fixed header from v2
+#   - Debug logging from v2 (can be toggled off in production)
+#   - Cleaner card builders (separate functions) from v2
+#   - format_sustainability_response from v2
+#   - Smart sustainability keyword routing from v2
+#   - format_pollution_response and format_carbon_response from v1/v2
+#   - Robust router ordering from v2
+#   - MCP_URL via env var from v2
+#   - All CSS improvements merged
+ 
 import streamlit as st
 import requests
 import re
@@ -117,12 +127,14 @@ st.markdown(
     }
  
     /* Comparison cards */
-    .comparison-container { text-align: center; margin: 20px 0; }
+    .comparison-container { text-align: center; margin: 16px 0; }
     .comparison-title {
         color: #2E7D32;
-        margin-bottom: 20px;
-        font-size: 1.5rem;
-        font-weight: bold;
+        margin-bottom: 14px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
     }
     .comparison-wrapper {
         display: flex;
@@ -133,12 +145,12 @@ st.markdown(
     .comparison-card {
         background: white;
         border-radius: 10px;
-        padding: 15px;
-        margin: 10px;
-        width: 200px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        padding: 12px 14px;
+        width: 160px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
         text-align: center;
         display: inline-block;
+        font-size: 0.82rem;
     }
  
     /* Footer */
@@ -306,8 +318,9 @@ def format_pollution_response(text: str) -> str:
 # ─────────────────────────────────────────────
 def _card_shell(city: str, border_color: str, body_html: str) -> str:
     return (
-        f'<div class="comparison-card" style="border-top:5px solid {border_color};">'
-        f'<h3 style="margin:0 0 8px 0;color:#333;font-size:1rem;">{city.upper()}</h3>'
+        f'<div class="comparison-card" style="border-top:4px solid {border_color};font-size:0.82rem;">'
+        f'<div style="font-size:0.78rem;font-weight:700;letter-spacing:0.06em;'
+        f'color:#555;text-transform:uppercase;margin-bottom:6px;">{city}</div>'
         f'{body_html}'
         f'</div>'
     )
@@ -327,12 +340,12 @@ def build_carbon_card(city: str, data) -> str:
     else:
         color, label = "#F44336", "High Impact"
     body = (
-        f'<div style="font-size:1.5rem;font-weight:bold;color:{color};">{val}</div>'
-        f'<div style="font-size:0.85rem;color:#666;">tons CO₂/year</div>'
-        f'<div style="background:{color};color:white;padding:5px;border-radius:20px;'
-        f'margin-top:10px;font-size:0.8rem;">{label}</div>'
-        f'<div style="margin-top:8px;font-size:0.7rem;color:#666;">'
-        f'Low &lt;2 | Moderate 2–5 | High &gt;5 tons CO₂/yr</div>'
+        f'<div style="font-size:1.15rem;font-weight:700;color:{color};margin:4px 0 2px;">{val}</div>'
+        f'<div style="font-size:0.72rem;color:#888;margin-bottom:6px;">tons CO₂/year</div>'
+        f'<div style="background:{color};color:white;padding:3px 8px;border-radius:20px;'
+        f'font-size:0.72rem;display:inline-block;">{label}</div>'
+        f'<div style="margin-top:8px;font-size:0.65rem;color:#aaa;line-height:1.5;">'
+        f'Low &lt;2 | Moderate 2–5 | High &gt;5 tons/yr</div>'
     )
     return _card_shell(city, color, body)
  
@@ -348,10 +361,10 @@ def build_aqi_card(city: str, data) -> str:
     label = get_aqi_label(aqi)
     text_color = "black" if aqi <= 100 else "white"
     body = (
-        f'<div style="font-size:1.5rem;font-weight:bold;color:{color};">{aqi}</div>'
-        f'<div style="background:{color};color:{text_color};padding:5px;border-radius:20px;'
-        f'margin-top:10px;font-size:0.8rem;">{label}</div>'
-        f'<div style="margin-top:8px;font-size:0.7rem;color:#666;">'
+        f'<div style="font-size:1.15rem;font-weight:700;color:{color};margin:4px 0 6px;">{aqi}</div>'
+        f'<div style="background:{color};color:{text_color};padding:3px 8px;border-radius:20px;'
+        f'font-size:0.72rem;display:inline-block;">{label}</div>'
+        f'<div style="margin-top:8px;font-size:0.65rem;color:#aaa;line-height:1.6;">'
         f'0–50 Good | 51–100 Moderate | 101–150 Sensitive<br>'
         f'151–200 Unhealthy | 201–300 Very Unhealthy | 300+ Hazardous</div>'
     )
